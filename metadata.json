@@ -1,0 +1,6 @@
+{
+  "name": "DartVector - Professional Darts Scoring & Match Engine",
+  "description": "Professional Darts scoring engine with Two Teams mode (up to 6 players), all-time career analytics comparing up to 10 players, customizable dart impact sound packs, live Throw-by-Throw chronological log panel, 25-level Gaussian DartBot AI, interactive regulation SVG dartboard, official announcer audio caller, checkout pathfinder, and match statistics analytics.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
