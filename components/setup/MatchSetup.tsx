@@ -42,6 +42,7 @@ interface MatchSetupProps {
     isTeamMatch?: boolean,
     teams?: { team_1: TeamProfile; team_2: TeamProfile }
   ) => void;
+  onOpenGuide?: () => void;
 }
 
 const TEAM_AVATARS_1 = ['🔴', '🎯', '🦅', '⚡', '👑', '🔥', '🦁', '🐉'];
@@ -49,7 +50,7 @@ const TEAM_AVATARS_2 = ['🔵', '⚡', '🦁', '🛡️', '🚀', '❄️', '�
 const TEAM_COLORS_1 = ['#EF4444', '#F97316', '#F59E0B', '#EC4899', '#8B5CF6'];
 const TEAM_COLORS_2 = ['#3B82F6', '#06B6D4', '#10B981', '#6366F1', '#14B8A6'];
 
-export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
+export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch, onOpenGuide }) => {
   // Mode Category: 'teams' (Two Teams Mode) or 'singles' (Individual / FFA / Bot)
   const [competitionType, setCompetitionType] = useState<'teams' | 'singles'>('teams');
 
@@ -141,7 +142,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
   const [newPlayerAvatar, setNewPlayerAvatar] = useState<string>('🎯');
 
   const totalTeamPlayers = team1Roster.length + team2Roster.length;
-  const isMaxPlayersReached = totalTeamPlayers >= 6;
+  const isMaxPlayersReached = totalTeamPlayers >= 10;
 
   useEffect(() => {
     storageEngine.getPlayers().then((players) => {
@@ -157,31 +158,8 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
   }, []);
 
   // Quick Preset Handlers
-  const applyPreset = (preset: '1v1' | '2v2' | '3v3' | 'humans_vs_bots') => {
-    if (preset === '1v1') {
-      setTeam1Roster([
-        {
-          id: 't1_p1',
-          name: 'Player 1',
-          avatar: '🎯',
-          color: team1Color,
-          isBot: false,
-          teamId: 'team_1',
-          createdAt: '2025-01-01T00:00:00.000Z',
-        },
-      ]);
-      setTeam2Roster([
-        {
-          id: 't2_p1',
-          name: 'Player 2',
-          avatar: '⚡',
-          color: team2Color,
-          isBot: false,
-          teamId: 'team_2',
-          createdAt: '2025-01-01T00:00:00.000Z',
-        },
-      ]);
-    } else if (preset === '2v2') {
+  const applyPreset = (preset: '2v2' | '3v3' | '4v4' | '5v5' | 'humans_vs_bots') => {
+    if (preset === '2v2') {
       setTeam1Roster([
         {
           id: 't1_p1',
@@ -275,6 +253,178 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
           id: 't2_p3',
           name: 'Player 6',
           avatar: '🛡️',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      ]);
+    } else if (preset === '4v4') {
+      setTeam1Roster([
+        {
+          id: 't1_p1',
+          name: 'Player 1',
+          avatar: '🎯',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't1_p2',
+          name: 'Player 2',
+          avatar: '🔥',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't1_p3',
+          name: 'Player 3',
+          avatar: '🦅',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't1_p4',
+          name: 'Player 4',
+          avatar: '👑',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      ]);
+      setTeam2Roster([
+        {
+          id: 't2_p1',
+          name: 'Player 5',
+          avatar: '⚡',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't2_p2',
+          name: 'Player 6',
+          avatar: '🦁',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't2_p3',
+          name: 'Player 7',
+          avatar: '🛡️',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't2_p4',
+          name: 'Player 8',
+          avatar: '🚀',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      ]);
+    } else if (preset === '5v5') {
+      setTeam1Roster([
+        {
+          id: 't1_p1',
+          name: 'Player 1',
+          avatar: '🎯',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't1_p2',
+          name: 'Player 2',
+          avatar: '🔥',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't1_p3',
+          name: 'Player 3',
+          avatar: '🦅',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't1_p4',
+          name: 'Player 4',
+          avatar: '👑',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't1_p5',
+          name: 'Player 5',
+          avatar: '🐉',
+          color: team1Color,
+          isBot: false,
+          teamId: 'team_1',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      ]);
+      setTeam2Roster([
+        {
+          id: 't2_p1',
+          name: 'Player 6',
+          avatar: '⚡',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't2_p2',
+          name: 'Player 7',
+          avatar: '🦁',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't2_p3',
+          name: 'Player 8',
+          avatar: '🛡️',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't2_p4',
+          name: 'Player 9',
+          avatar: '🚀',
+          color: team2Color,
+          isBot: false,
+          teamId: 'team_2',
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+        {
+          id: 't2_p5',
+          name: 'Player 10',
+          avatar: '❄️',
           color: team2Color,
           isBot: false,
           teamId: 'team_2',
@@ -546,6 +696,19 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
             </p>
           </div>
         </div>
+
+        {onOpenGuide && (
+          <button
+            type="button"
+            id="setup-open-guide-btn"
+            onClick={onOpenGuide}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 border border-amber-500/30 rounded-xl text-xs font-black transition-all active:scale-95 shadow-sm"
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span className="hidden sm:inline">How To Score & Voice Guide</span>
+            <span className="sm:hidden">Guide</span>
+          </button>
+        )}
       </div>
 
       {/* 0. HOUSE LEAGUE 1-CLICK QUICK START PRESETS */}
@@ -576,46 +739,20 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
               setX01Score(501);
               setOutRule('double_out');
               setLegsToWin(3);
-              applyPreset('1v1');
+              applyPreset('2v2');
             }}
             className="p-3 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 rounded-2xl flex flex-col items-start gap-1 text-left transition-all active:scale-95 group shadow-sm"
           >
             <div className="flex items-center justify-between w-full">
               <span className="text-xs font-black text-white group-hover:text-amber-400">
-                🎯 501 Double Out
+                🎯 501 2v2 Doubles
               </span>
               <span className="text-[9px] font-bold px-1.5 py-0.2 bg-zinc-800 text-zinc-300 rounded">
                 Best of 3
               </span>
             </div>
             <span className="text-[10px] text-zinc-400 leading-tight">
-              Standard pub league match, double out to finish
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setCompetitionType('teams');
-              setGameType('x01');
-              setX01Score(301);
-              setInRule('straight_in');
-              setOutRule('straight_out');
-              setLegsToWin(3);
-              applyPreset('1v1');
-            }}
-            className="p-3 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 rounded-2xl flex flex-col items-start gap-1 text-left transition-all active:scale-95 group shadow-sm"
-          >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-xs font-black text-white group-hover:text-amber-400">
-                🍻 Casual 301
-              </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-950 text-emerald-300 rounded">
-                Any Out
-              </span>
-            </div>
-            <span className="text-[10px] text-zinc-400 leading-tight">
-              Fast, beginner-friendly games (finish on any single/double)
+              Standard pub league doubles match, double out to finish
             </span>
           </button>
 
@@ -627,20 +764,45 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
               setX01Score(501);
               setOutRule('double_out');
               setLegsToWin(3);
-              applyPreset('2v2');
+              applyPreset('5v5');
             }}
             className="p-3 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 rounded-2xl flex flex-col items-start gap-1 text-left transition-all active:scale-95 group shadow-sm"
           >
             <div className="flex items-center justify-between w-full">
               <span className="text-xs font-black text-white group-hover:text-amber-400">
-                👥 Friday 2v2 Pairs
+                👑 5v5 Team Battle
               </span>
               <span className="text-[9px] font-bold px-1.5 py-0.2 bg-amber-950 text-amber-300 rounded">
-                2 vs 2
+                10 Players
               </span>
             </div>
             <span className="text-[10px] text-zinc-400 leading-tight">
-              Two teams, 2 players each with alternating turns
+              Full 10-player team clash with 5 throwers per squad
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setCompetitionType('teams');
+              setGameType('x01');
+              setX01Score(501);
+              setOutRule('double_out');
+              setLegsToWin(3);
+              applyPreset('4v4');
+            }}
+            className="p-3 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 rounded-2xl flex flex-col items-start gap-1 text-left transition-all active:scale-95 group shadow-sm"
+          >
+            <div className="flex items-center justify-between w-full">
+              <span className="text-xs font-black text-white group-hover:text-amber-400">
+                👥 4v4 Squad Clash
+              </span>
+              <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-950 text-emerald-300 rounded">
+                8 Players
+              </span>
+            </div>
+            <span className="text-[10px] text-zinc-400 leading-tight">
+              Two teams, 4 players each with alternating rotation
             </span>
           </button>
 
@@ -661,11 +823,11 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
                 🛡️ House 3v3 Triples
               </span>
               <span className="text-[9px] font-bold px-1.5 py-0.2 bg-blue-950 text-blue-300 rounded">
-                3 vs 3
+                6 Players
               </span>
             </div>
             <span className="text-[10px] text-zinc-400 leading-tight">
-              Full 6-player team clash with 3 players per squad
+              Two teams, 3 players each with alternating turns
             </span>
           </button>
 
@@ -676,20 +838,20 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
               setGameType('cricket');
               setCricketPoints(true);
               setCricketLegs(1);
-              applyPreset('1v1');
+              applyPreset('2v2');
             }}
             className="p-3 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 rounded-2xl flex flex-col items-start gap-1 text-left transition-all active:scale-95 group shadow-sm"
           >
             <div className="flex items-center justify-between w-full">
               <span className="text-xs font-black text-white group-hover:text-amber-400">
-                ⚔️ Pub Cricket
+                ⚔️ 2v2 Pub Cricket
               </span>
               <span className="text-[9px] font-bold px-1.5 py-0.2 bg-red-950 text-red-300 rounded">
                 15-20 + Bull
               </span>
             </div>
             <span className="text-[10px] text-zinc-400 leading-tight">
-              Close out segments 15 to 20 & Bull with score accumulation
+              Close out segments 15 to 20 & Bull in pairs
             </span>
           </button>
 
@@ -796,7 +958,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
                 <span>Team Rosters & Throw Sequence</span>
               </div>
               <div className="text-xs text-zinc-400 mt-0.5">
-                Total Players: <span className="font-mono font-bold text-white">{totalTeamPlayers} / 6 Maximum</span>
+                Total Players: <span className="font-mono font-bold text-white">{totalTeamPlayers} / 10 Maximum</span>
               </div>
             </div>
 
@@ -804,11 +966,18 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[11px] text-zinc-500 font-bold uppercase mr-1">Presets:</span>
               <button
-                id="preset-2v2-btn"
-                onClick={() => applyPreset('2v2')}
+                id="preset-5v5-btn"
+                onClick={() => applyPreset('5v5')}
+                className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-amber-200 rounded-lg text-xs font-black border border-amber-500/40 transition-colors"
+              >
+                5v5 (10p)
+              </button>
+              <button
+                id="preset-4v4-btn"
+                onClick={() => applyPreset('4v4')}
                 className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-bold border border-zinc-800 transition-colors"
               >
-                2v2 Doubles (4p)
+                4v4 (8p)
               </button>
               <button
                 id="preset-3v3-btn"
@@ -818,11 +987,11 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
                 3v3 Triples (6p)
               </button>
               <button
-                id="preset-1v1-btn"
-                onClick={() => applyPreset('1v1')}
+                id="preset-2v2-btn"
+                onClick={() => applyPreset('2v2')}
                 className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-bold border border-zinc-800 transition-colors"
               >
-                1v1 Team (2p)
+                2v2 Doubles (4p)
               </button>
               <button
                 id="preset-hvb-btn"
@@ -929,7 +1098,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
                 </button>
               ) : (
                 <div className="text-[10px] text-zinc-500 text-center font-bold italic py-1">
-                  Maximum 6 players reached
+                  Maximum 10 players reached (5v5)
                 </div>
               )}
             </div>
@@ -1027,7 +1196,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({ onStartMatch }) => {
                 </button>
               ) : (
                 <div className="text-[10px] text-zinc-500 text-center font-bold italic py-1">
-                  Maximum 6 players reached
+                  Maximum 10 players reached (5v5)
                 </div>
               )}
             </div>

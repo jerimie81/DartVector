@@ -120,7 +120,7 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
               <span>{match.rules.type === 'x01' ? `${match.rules.config.startingScore} Match` : match.gameType.toUpperCase()}</span>
               {isTeamMatch && (
                 <span className="text-[10px] font-black uppercase bg-amber-500 text-zinc-950 px-1.5 py-0.2 rounded">
-                  Two Teams (Max 6P)
+                  Two Teams (Up to 10P / 5v5)
                 </span>
               )}
             </div>

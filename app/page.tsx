@@ -101,6 +101,19 @@ export default function DartVectorApp() {
   // Undo history stack
   const historyStackRef = useRef<GameState[]>([]);
 
+  // Open walkthrough guide on initial visit after hydration
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasSeen = localStorage.getItem('dartvector_walkthrough_seen');
+      if (!hasSeen) {
+        const timer = setTimeout(() => {
+          setIsGuideOpen(true);
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
+
   // Save match to IndexedDB on completion
   useEffect(() => {
     if (gameState.isMatchOver) {
@@ -535,7 +548,10 @@ export default function DartVectorApp() {
 
         {/* VIEW 2: NEW MATCH SETUP */}
         {activeScreen === 'setup' && (
-          <MatchSetup onStartMatch={handleStartNewMatch} />
+          <MatchSetup
+            onStartMatch={handleStartNewMatch}
+            onOpenGuide={() => setIsGuideOpen(true)}
+          />
         )}
 
         {/* VIEW 3: MATCH HISTORY & ANALYTICS VAULT */}

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { DartThrow, GameRules } from '@/lib/types';
 import { coordinatesToDart, getIdealTargetCoords } from '@/lib/dartboard-geometry';
 import { Mic, MicOff, Delete, RotateCcw, Check, Sparkles } from 'lucide-react';
+import { parseVoiceDartsCommand } from '@/lib/voice-parser';
 
 interface InputPadProps {
   rules: GameRules;
@@ -40,42 +41,35 @@ export const InputPad: React.FC<InputPadProps> = ({
   const recognitionRef = useRef<any>(null);
 
   const handleVoiceCommand = useCallback((transcript: string) => {
-    // Check bust
-    if (transcript.includes('bust')) {
+    const result = parseVoiceDartsCommand(transcript);
+
+    if (result.type === 'undo') {
+      if (canUndoDart) {
+        onUndoDart();
+        setVoiceFeedback('↩️ Voice Command: Undid last dart');
+      } else if (canUndoTurn) {
+        onUndoTurn();
+        setVoiceFeedback('↩️ Voice Command: Undid last turn');
+      } else {
+        setVoiceFeedback('⚠️ Nothing to undo');
+      }
+      return;
+    }
+
+    if (result.type === 'bust' || result.score === 0) {
       onApplyTurnTotal(0);
+      setVoiceFeedback('❌ Recorded Bust / No Score (0)');
       return;
     }
 
-    // Common phrase scores
-    const spokenScores: Record<string, number> = {
-      'one hundred and eighty': 180,
-      'one eighty': 180,
-      'one hundred eighty': 180,
-      'ton eighty': 180,
-      'one hundred and forty': 140,
-      'one forty': 140,
-      'ton forty': 140,
-      'one hundred': 100,
-      'ton': 100,
-      'eighty five': 85,
-      'sixty': 60,
-      'forty five': 45,
-      'twenty six': 26,
-      'zero': 0,
-      'no score': 0,
-    };
-
-    if (spokenScores[transcript] !== undefined) {
-      onApplyTurnTotal(spokenScores[transcript]);
+    if (result.type === 'score' && result.score !== undefined) {
+      onApplyTurnTotal(result.score);
+      setVoiceFeedback(`🎯 Recorded ${result.label || result.score}`);
       return;
     }
 
-    // Parse number
-    const num = parseInt(transcript.replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(num) && num >= 0 && num <= 180) {
-      onApplyTurnTotal(num);
-    }
-  }, [onApplyTurnTotal]);
+    setVoiceFeedback(`❓ Could not parse "${transcript}". Try saying "140", "Ton 80", or "Bust"`);
+  }, [onApplyTurnTotal, onUndoDart, onUndoTurn, canUndoDart, canUndoTurn]);
 
   // Initialize Speech Recognition for Voice Caller Input
   useEffect(() => {

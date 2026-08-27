@@ -1,16 +1,78 @@
 # DartVector - Professional Darts Scoring & Match Engine
 
-DartVector is a professional darts scoring, match engine, and analytics platform featuring PDC-regulation rules, 25-level Gaussian DartBot AI, interactive regulation SVG dartboard, broadcast-style chalkboard mode, live match vault, and all-time career analytics.
+DartVector is a professional darts scoring, match engine, and analytics platform designed to run directly in any web browser on desktop, tablet, phone, or smart TV with zero installation required.
 
 ---
 
-## 🚀 Quick Start (Web Development)
+## 🌐 Instant Browser Usage (No Installation Needed)
+
+End users (family, players, league members) do not need to install or build anything:
+
+1. **Open the App**: Simply visit the hosted application URL (e.g. your Google AI Studio live share link, Vercel URL, or custom domain) in any modern browser (**Chrome, Edge, Safari, Firefox, Opera**).
+2. **Device Friendly**: Works seamlessly on **Windows, Linux, macOS, iOS (iPad/iPhone), Android tablets & phones**.
+3. **Install as Web App (PWA / Chrome App)**:
+   - In Chrome/Edge, click the **Install App** icon in the URL address bar (or menu $\rightarrow$ *Install DartVector*).
+   - On iOS Safari, tap **Share** $\rightarrow$ **Add to Home Screen**.
+   - This places a standalone DartVector icon on the desktop or home screen that launches full-screen without browser toolbars.
+
+---
+
+## 🚀 1-Click Cloud Deployment Guides
+
+Deploy DartVector to the cloud in under 2 minutes so anyone can access it via a public URL:
+
+### Option 1: Vercel (Recommended - 1-Click Free Hosting)
+
+1. Push your repository to **GitHub** or export the project.
+2. Go to [vercel.com](https://vercel.com) and sign in.
+3. Click **"Add New Project"** and import your DartVector GitHub repository.
+4. Framework Preset will automatically detect **Next.js**.
+5. *(Optional)* Add environment variable `GEMINI_API_KEY` under **Environment Variables** if using AI audio announcer / AI coaching.
+6. Click **Deploy**.
+   - You will receive an instant, secure public link: `https://your-dartvector-app.vercel.app`.
+
+---
+
+### Option 2: Google Cloud Run (Containerized 1-Click)
+
+1. In Google AI Studio Build, click **Deploy** in the top navigation bar.
+2. Select your Google Cloud Project.
+3. Choose **Cloud Run** and confirm deployment.
+4. Your application will be live at a high-performance Google Cloud URL with global CDN.
+
+---
+
+### Option 3: Netlify
+
+1. Push your code to GitHub.
+2. Go to [netlify.com](https://netlify.com) and click **"Add new site" -> "Import an existing project"**.
+3. Select your repository.
+4. Netlify will auto-configure:
+   - **Build command**: `npm run build`
+   - **Publish directory**: `.next`
+5. Click **Deploy DartVector**.
+
+---
+
+### Option 4: Render / Railway / DigitalOcean App Platform
+
+1. Create a **Web Service** pointing to your repository.
+2. Set:
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm run start`
+   - **Port**: `3000`
+
+---
+
+## 💻 Local Development & Testing (Linux, macOS, Windows)
+
+Running and testing DartVector locally on your own machine is straightforward:
 
 ### Prerequisites
-- **Node.js**: v18.17.0 or v20+ recommended
-- **npm**: v9+ (or `yarn` / `pnpm`)
+- **Node.js**: v18.17.0 or v20+
+- **npm**: v9+ (or `pnpm` / `yarn`)
 
-### Installation & Running Locally
+### Quick Start Commands
 
 ```bash
 # 1. Install dependencies
@@ -19,292 +81,67 @@ npm install
 # 2. Start the local development server
 npm run dev
 
-# 3. Open in browser
+# 3. Open in your browser
 # Navigate to http://localhost:3000
 ```
 
-### Production Web Build
+### Production Build Test
 
 ```bash
-# Create optimized production build
+# Test the optimized production build locally
 npm run build
-
-# Start production server
 npm run start
 ```
 
 ---
 
-## 📦 Desktop Compilation & Packaging Guide (.exe & .deb)
+## ⚙️ Key Application Features
 
-You can package and compile DartVector into standalone desktop executables:
-- **Windows Executable**: `.exe` installer (NSIS) or standalone portable `.exe`
-- **Linux Debian Package**: `.deb` package installer for Debian, Ubuntu, Linux Mint, and derivatives
-
----
-
-### Method: Electron Builder (Recommended)
-
-DartVector can be wrapped using Electron to produce cross-platform native installers.
-
-#### 1. Add Desktop Wrapper Dependencies
-
-In your project root, add Electron and Electron Builder:
-
-```bash
-npm install --save-dev electron electron-builder
-```
-
-#### 2. Create Electron Main Process Entry (`electron-main.js`)
-
-Create a file named `electron-main.js` in the project root:
-
-```javascript
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
-
-let mainWindow;
-
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 700,
-    title: 'DartVector - Professional Darts Scoring Engine',
-    backgroundColor: '#09090b',
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-
-  // In production desktop mode, load the exported web assets or local server
-  const isDev = process.env.NODE_ENV === 'development';
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
-  } else {
-    mainWindow.loadFile(path.join(__dirname, 'out', 'index.html')).catch(() => {
-      mainWindow.loadURL('http://localhost:3000');
-    });
-  }
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-}
-
-app.whenReady().then(createWindow);
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
-```
-
-#### 3. Configure `package.json` for Desktop Builds
-
-Add the `main` entry and electron-builder build scripts in `package.json`:
-
-```json
-{
-  "main": "electron-main.js",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "desktop:pack": "electron-builder --dir",
-    "dist:win": "electron-builder --win --x64",
-    "dist:linux": "electron-builder --linux deb --x64",
-    "dist:all": "electron-builder -wl"
-  },
-  "build": {
-    "appId": "com.dartvector.app",
-    "productName": "DartVector",
-    "copyright": "Copyright © 2026 DartVector",
-    "directories": {
-      "output": "dist-desktop"
-    },
-    "files": [
-      "out/**/*",
-      "public/**/*",
-      "electron-main.js",
-      "package.json"
-    ],
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
-      ],
-      "icon": "public/icon.png"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "DartVector"
-    },
-    "linux": {
-      "target": [
-        {
-          "target": "deb",
-          "arch": ["x64", "arm64"]
-        },
-        {
-          "target": "AppImage",
-          "arch": ["x64"]
-        }
-      ],
-      "category": "Game;Sports;",
-      "icon": "public/icon.png",
-      "maintainer": "DartVector Team"
-    },
-    "deb": {
-      "priority": "optional",
-      "depends": [
-        "libnotify4",
-        "libnss3",
-        "libxss1",
-        "xdg-utils",
-        "libsecret-1-0"
-      ]
-    }
-  }
-}
-```
+- **Regulation Scoring**: Standard 501, 301, Cricket, Around the Clock, Killer, and Shanghai.
+- **Match Flexibility**:
+  - **Singles & Free-For-All**: Up to **10 players** in a single match.
+  - **Two-Team Play**: 1v1, 2v2, 3v3, 4v4, or **5v5 team battles** (up to **10 players total**) with automatic alternating turn rotation.
+- **DartBot AI**: 25-level Gaussian accuracy AI simulation from beginner pub thrower to PDC World Champion.
+- **Broadcast Chalkboard Mode**: Clean, high-visibility scorepad display designed for dart stands, tablets, and pub TVs.
+- **Audio Announcer**: Realistic match referee voice announcements and impact sound packs (Pro Tournament, Pub Style, Heavy Steel, Electronic).
+- **Match Vault & All-Time Career Analytics**: Chronological throw-by-throw replay logs and head-to-head career comparisons for up to 10 players.
 
 ---
 
-## 🪟 Windows Executable (.exe) Compilation
+## 📦 Optional: Standalone Desktop Packaging (.exe & .deb)
 
-### Option A: Compiling Natively on Windows
+*(For advanced users who specifically want an offline Windows `.exe` installer or Linux `.deb` package)*
 
-1. Open PowerShell or Command Prompt in the project folder.
-2. Build the web app assets and package the `.exe`:
-   ```powershell
-   npm run build
-   npm run dist:win
-   ```
-3. **Output Location**:
-   The generated binaries will be placed in `dist-desktop/`:
-   - `dist-desktop/DartVector Setup <version>.exe` (NSIS Installer)
-   - `dist-desktop/DartVector <version>.exe` (Standalone Portable Executable)
+### Using Electron Builder
 
----
-
-### Option B: Cross-Compiling for Windows (.exe) on Linux
-
-You can compile Windows `.exe` files directly from a Linux machine using Wine or Docker.
-
-#### Using Wine on Linux (Ubuntu / Debian):
-
-1. **Install Wine and 32/64-bit support**:
+1. **Install Electron dependencies**:
    ```bash
-   sudo dpkg --add-architecture i386
-   sudo apt-get update
-   sudo apt-get install -y wine64 wine32
+   npm install --save-dev electron electron-builder
    ```
 
-2. **Run the Windows build command**:
-   ```bash
-   npm run build
-   npm run dist:win
-   ```
-3. The `.exe` installers will be generated in `dist-desktop/`.
+2. **Add an `electron-main.js` file**:
+   ```javascript
+   const { app, BrowserWindow } = require('electron');
+   let mainWindow;
 
-#### Using Docker (Zero-dependency cross-compilation):
+   function createWindow() {
+     mainWindow = new BrowserWindow({
+       width: 1400,
+       height: 900,
+       backgroundColor: '#09090b',
+       webPreferences: { nodeIntegration: false, contextIsolation: true }
+     });
+     mainWindow.loadURL('http://localhost:3000');
+   }
 
-```bash
-docker run --rm -ti \
-  --env-file <(env | grep -iE 'DEBUG|NODE_|ELECTRON_|YARN_|NPM_|CI|CIRCLE|TRAVIS_TAG|TRAVIS|TRAVIS_REPO_SLUG|TRAVIS_COMMIT|TRAVIS_BRANCH|TRAVIS_PULL_REQUEST') \
-  -v ${PWD}:/project \
-  -v ~/.electron:/root/.electron \
-  electronuserland/builder:wine \
-  /bin/bash -c "npm install && npm run build && npm run dist:win"
-```
-
----
-
-## 🐧 Linux Debian Package (.deb) Compilation
-
-### Compiling `.deb` on Linux (Debian, Ubuntu, Linux Mint)
-
-1. **Install Linux Build Tools**:
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y build-essential dpkg fakeroot libarchive-tools
+   app.whenReady().then(createWindow);
    ```
 
-2. **Compile the `.deb` package**:
-   ```bash
-   npm run build
-   npm run dist:linux
-   ```
-
-3. **Output Location**:
-   The compiled Debian package is generated in `dist-desktop/`:
-   - `dist-desktop/dartvector_<version>_amd64.deb` (64-bit x86)
-   - `dist-desktop/dartvector_<version>_arm64.deb` (ARM64, if selected)
-
-4. **Installing the compiled `.deb` package**:
-   ```bash
-   # Install via dpkg
-   sudo dpkg -i dist-desktop/dartvector_*_amd64.deb
-
-   # Fix any missing dependencies if prompted
-   sudo apt-get install -f -y
-   ```
-
-5. **Launching DartVector**:
-   - Run from terminal: `dartvector`
-   - Or launch from your desktop application menu under **Games & Sports -> DartVector**.
-
-6. **Uninstalling the package**:
-   ```bash
-   sudo apt-get remove dartvector
-   ```
-
----
-
-## 🛠️ Alternative: Node Single Executable Application (Node SEA / Pkg)
-
-For command-line / headless scoring server bundles:
-
-```bash
-# Install pkg
-npm install -g @yao-pkg/pkg
-
-# Compile standalone executables for Windows (.exe) and Linux (.deb / binary)
-pkg . --targets node20-win-x64,node20-linux-x64 --output-path bin/
-```
-
----
-
-## 📋 Summary of Build Commands
-
-| Target Platform | Package Format | Host System | Command |
-|---|---|---|---|
-| **Windows** | `.exe` (NSIS Installer) | Windows | `npm run dist:win` |
-| **Windows** | `.exe` (Portable) | Windows / Linux (via Wine) | `npm run dist:win` |
-| **Linux** | `.deb` (Debian/Ubuntu) | Linux | `npm run dist:linux` |
-| **Linux** | `.AppImage` | Linux | `npm run dist:linux` |
-| **Multi-Platform** | `.exe` + `.deb` | Linux (with Wine) | `npm run dist:all` |
+3. **Build Desktop Installers**:
+   - **Windows (.exe)**: `npx electron-builder --win --x64`
+   - **Linux (.deb)**: `npx electron-builder --linux deb --x64`
 
 ---
 
 ## 📄 License & Attribution
-DartVector Precision Darts Scoring Engine. PDC official match scoring rules, 501/301/Cricket/Around the Clock/Killer/Shanghai game modes.
+DartVector Precision Darts Scoring Engine. PDC official match scoring rules, built with Next.js and Tailwind CSS.
