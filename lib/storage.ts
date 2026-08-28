@@ -1,5 +1,6 @@
 // DartMaster Pro - High Capacity Match History & Analytics Storage Subsystem (IndexedDB + LocalStorage)
 import { MatchRecord, PlayerProfile, PlayerMatchStats, TeamMatchStats, TurnRecord } from './types';
+import { syncMatchToCloud, deleteMatchFromCloud, syncPlayerToCloud } from './cloud-sync';
 
 const DB_NAME = 'dartmaster_pro_db';
 const DB_VERSION = 1;
@@ -171,6 +172,7 @@ class StorageSubsystem {
 
   public async savePlayer(player: PlayerProfile): Promise<void> {
     try {
+      syncPlayerToCloud(player).catch(() => {});
       const db = await this.initDB();
       if (!db) {
         const current = await this.getPlayers();
@@ -215,6 +217,7 @@ class StorageSubsystem {
   // --- MATCHES MANAGEMENT (High Capacity) ---
   public async saveMatch(match: MatchRecord): Promise<void> {
     try {
+      syncMatchToCloud(match).catch(() => {});
       const db = await this.initDB();
       if (!db) {
         const local = localStorage.getItem('dartmaster_matches');
@@ -291,6 +294,7 @@ class StorageSubsystem {
 
   public async deleteMatch(id: string): Promise<void> {
     try {
+      deleteMatchFromCloud(id).catch(() => {});
       const db = await this.initDB();
       if (!db) {
         const matches = await this.getMatches(200);

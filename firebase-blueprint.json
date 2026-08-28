@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information and career dart stats",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "avatar": { "type": "string" },
+        "color": { "type": "string" },
+        "matchesPlayed": { "type": "number" },
+        "matchesWon": { "type": "number" },
+        "legsPlayed": { "type": "number" },
+        "legsWon": { "type": "number" },
+        "career3DAvg": { "type": "number" },
+        "highestTurn": { "type": "number" },
+        "highestCheckout": { "type": "number" },
+        "count180s": { "type": "number" },
+        "count140Plus": { "type": "number" },
+        "count100Plus": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "email", "createdAt"]
+    },
+    "UserMatch": {
+      "title": "UserMatch",
+      "description": "Historical darts match record saved for the authenticated user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "gameType": { "type": "string" },
+        "isTeamMatch": { "type": "boolean" },
+        "winnerPlayerId": { "type": "string" },
+        "winnerTeamId": { "type": "string" },
+        "startTime": { "type": "number" },
+        "endTime": { "type": "number" },
+        "status": { "type": "string" },
+        "summary": { "type": "string" },
+        "matchDataJson": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "gameType", "startTime", "status", "matchDataJson", "createdAt"]
+    },
+    "SavedCustomPlayer": {
+      "title": "SavedCustomPlayer",
+      "description": "Custom player profiles created by the user for league & squad matches",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "color": { "type": "string" },
+        "isBot": { "type": "boolean" },
+        "botLevel": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "avatar", "color", "isBot", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "entity": "UserProfile",
+      "description": "User profile with all-time career statistics"
+    },
+    "users/{userId}/matches/{matchId}": {
+      "entity": "UserMatch",
+      "description": "Persistent user match history records"
+    },
+    "users/{userId}/custom_players/{playerId}": {
+      "entity": "SavedCustomPlayer",
+      "description": "Custom player roster for the user"
+    }
+  }
+}

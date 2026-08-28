@@ -31,8 +31,11 @@ import {
   Flame,
   Users,
   Crown,
+  Cloud,
+  RefreshCw,
 } from 'lucide-react';
 
+import { useAuth } from '@/lib/auth-context';
 import { PlayerHistoryComparison } from './PlayerHistoryComparison';
 
 interface AnalyticsDashboardProps {
@@ -44,6 +47,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   currentMatch,
   onNewMatch,
 }) => {
+  const { user, signInWithGoogle, syncLocalToCloud, syncCloudHistory, isSyncing, syncStatus } = useAuth();
   const [activeTab, setActiveTab] = useState<'current_match' | 'player_comparison' | 'match_history' | 'players'>('player_comparison');
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
@@ -256,8 +260,38 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </button>
         </div>
 
-        {/* Global Action Tools: Export / Import */}
+        {/* Global Action Tools: Cloud Sync / Export / Import */}
         <div className="flex items-center gap-2">
+          {user ? (
+            <button
+              id="analytics-cloud-sync-btn"
+              onClick={async () => {
+                await syncLocalToCloud();
+                loadData();
+              }}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-xl border border-amber-500/30 transition-colors"
+              title="Backup & Sync all match scores to Google Cloud"
+            >
+              {isSyncing ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+              ) : (
+                <Cloud className="w-3.5 h-3.5 text-amber-400" />
+              )}
+              <span>{syncStatus || (isSyncing ? 'Syncing...' : 'Sync to Cloud')}</span>
+            </button>
+          ) : (
+            <button
+              id="analytics-login-prompt-btn"
+              onClick={signInWithGoogle}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-amber-300 rounded-xl border border-amber-500/30 transition-colors"
+              title="Sign in to enable persistent cloud sync"
+            >
+              <Cloud className="w-3.5 h-3.5 text-amber-400" />
+              <span>Login to Sync Cloud</span>
+            </button>
+          )}
+
           <button
             id="export-db-btn"
             onClick={handleExportJSON}

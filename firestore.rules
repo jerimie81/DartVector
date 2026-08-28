@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is signed in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is the owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users Profile Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+      
+      // User Match History Subcollection
+      match /matches/{matchId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // User Custom Players Subcollection
+      match /custom_players/{playerId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

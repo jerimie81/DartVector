@@ -32,6 +32,8 @@ import { AICoachPanel } from '@/components/ai/AICoachPanel';
 import { ThrowLogPanel } from '@/components/scoreboard/ThrowLogPanel';
 import { HouseLeagueGuideModal } from '@/components/league/HouseLeagueGuideModal';
 import { HouseLeagueNightModal } from '@/components/league/HouseLeagueNightModal';
+import { UserAuthButton } from '@/components/auth/UserAuthButton';
+import { AuthProvider } from '@/lib/auth-context';
 
 import {
   Target,
@@ -326,8 +328,9 @@ export default function DartVectorApp() {
     : undefined;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-amber-500 selection:text-zinc-950">
-      {/* TOP BROADCAST NAVIGATION BAR */}
+    <AuthProvider>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-amber-500 selection:text-zinc-950">
+        {/* TOP BROADCAST NAVIGATION BAR */}
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         {/* Logo & Brand */}
         <div
@@ -433,6 +436,9 @@ export default function DartVectorApp() {
             <Volume2 className="w-4 h-4 text-amber-400" />
             <span className="hidden sm:inline">Caller FX</span>
           </button>
+
+          {/* User Sign In / Profile / Cloud Sync Component */}
+          <UserAuthButton />
 
           <button
             id="mobile-new-match-btn"
@@ -598,5 +604,6 @@ export default function DartVectorApp() {
         onClose={() => setIsGuideOpen(false)}
       />
     </div>
+  </AuthProvider>
   );
 }
