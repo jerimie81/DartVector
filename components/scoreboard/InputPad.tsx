@@ -56,6 +56,14 @@ export const InputPad: React.FC<InputPadProps> = ({
       return;
     }
 
+    if (result.type === 'dart_sequence' && result.darts && result.darts.length > 0) {
+      result.darts.forEach((dart) => {
+        onThrowDart(dart);
+      });
+      setVoiceFeedback(`🎯 Voice Sequence: ${result.label}`);
+      return;
+    }
+
     if (result.type === 'bust' || result.score === 0) {
       onApplyTurnTotal(0);
       setVoiceFeedback('❌ Recorded Bust / No Score (0)');

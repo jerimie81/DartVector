@@ -427,10 +427,70 @@ class SoundSystem {
     }
   }
 
+  // Synthesize acoustic referee fallback cues when TTS voices are unavailable
+  public playFallbackRefereeCue(type: 'bust' | 'gameshot' | 'score' | 'requirement', param?: number) {
+    this.initContext();
+    if (!this.ctx) return;
+    try {
+      const t = this.ctx.currentTime;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(this.settings.volume * this.settings.sfxVolume, t);
+      gain.connect(this.ctx.destination);
+
+      if (type === 'bust') {
+        this.playBustSound();
+      } else if (type === 'gameshot') {
+        this.play180Fanfare();
+      } else if (type === 'score') {
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440 + (param || 20) * 2, t);
+        osc.frequency.exponentialRampToValueAtTime(880, t + 0.12);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+        osc.connect(gain);
+        osc.start(t);
+        osc.stop(t + 0.15);
+      } else if (type === 'requirement') {
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        osc1.frequency.setValueAtTime(523.25, t);
+        osc2.frequency.setValueAtTime(659.25, t + 0.08);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        osc1.connect(gain);
+        osc2.connect(gain);
+        osc1.start(t);
+        osc1.stop(t + 0.1);
+        osc2.start(t + 0.08);
+        osc2.stop(t + 0.26);
+      }
+    } catch {
+      // AudioContext catch
+    }
+  }
+
   // Official Referee Speech Announcement
   public speak(text: string, priority: 'high' | 'normal' = 'normal', pitch: number = 1.0) {
     if (!this.settings.enabled || !this.settings.refereeCaller) return;
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (typeof window === 'undefined') return;
+
+    const hasSpeech = 'speechSynthesis' in window && window.speechSynthesis;
+    const hasVoices = this.voices.length > 0;
+
+    if (!hasSpeech || !hasVoices) {
+      // Fallback to synthesized acoustic cue
+      if (text.toLowerCase().includes('bust')) {
+        this.playFallbackRefereeCue('bust');
+      } else if (text.toLowerCase().includes('game shot')) {
+        this.playFallbackRefereeCue('gameshot');
+      } else if (text.toLowerCase().includes('require')) {
+        this.playFallbackRefereeCue('requirement');
+      } else {
+        this.playFallbackRefereeCue('score');
+      }
+      return;
+    }
 
     try {
       if (priority === 'high') {
@@ -447,7 +507,7 @@ class SoundSystem {
 
       window.speechSynthesis.speak(utterance);
     } catch {
-      // ignore
+      this.playFallbackRefereeCue('score');
     }
   }
 

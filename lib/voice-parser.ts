@@ -1,11 +1,13 @@
 /**
  * Voice Input Parser for Darts Scoring
- * Supports spoken numbers, natural words, pub slang, dartboard segments, and commands.
+ * Supports spoken numbers, natural words, pub slang, dartboard segments, multi-dart sequences, and commands.
  */
+import { DartThrow } from './types';
 
 export interface VoiceParseResult {
-  type: 'score' | 'undo' | 'bust' | 'unknown';
+  type: 'score' | 'undo' | 'bust' | 'unknown' | 'dart_sequence';
   score?: number;
+  darts?: DartThrow[];
   label?: string;
   originalTranscript: string;
 }
@@ -42,6 +44,104 @@ const NUMBER_WORDS: Record<string, number> = {
   hundred: 100,
   ton: 100,
 };
+
+export function parseSingleDartPhrase(phrase: string): DartThrow | null {
+  const clean = phrase.trim().toLowerCase();
+  if (!clean) return null;
+
+  if (clean === 'miss' || clean === 'zero' || clean === 'nil' || clean === 'outside' || clean === '0') {
+    return { segment: 0, multiplier: 0, score: 0, isBust: false };
+  }
+
+  if (clean === 'bullseye' || clean === 'double bull' || clean === 'inner bull' || clean === 'd50' || clean === '50') {
+    return { segment: 50, multiplier: 2, score: 50, isBust: false };
+  }
+
+  if (clean === 'bull' || clean === 'outer bull' || clean === 'single bull' || clean === '25') {
+    return { segment: 25, multiplier: 1, score: 25, isBust: false };
+  }
+
+  // Check treble/triple prefixes: "treble 20", "triple twenty", "t20"
+  const trebleMatch = clean.match(/^(?:treble|triple|t)\s*([0-9]{1,2}|[a-z]+)$/);
+  if (trebleMatch) {
+    const rawVal = trebleMatch[1];
+    const seg = parseInt(rawVal, 10) || NUMBER_WORDS[rawVal];
+    if (seg && seg >= 1 && seg <= 20) {
+      return { segment: seg, multiplier: 3, score: seg * 3, isBust: false };
+    }
+  }
+
+  // Check double prefixes: "double 16", "double sixteen", "d16"
+  const doubleMatch = clean.match(/^(?:double|d)\s*([0-9]{1,2}|[a-z]+)$/);
+  if (doubleMatch) {
+    const rawVal = doubleMatch[1];
+    const seg = parseInt(rawVal, 10) || NUMBER_WORDS[rawVal];
+    if (seg && seg >= 1 && seg <= 20) {
+      return { segment: seg, multiplier: 2, score: seg * 2, isBust: false };
+    }
+    if (seg === 25 || seg === 50) {
+      return { segment: 50, multiplier: 2, score: 50, isBust: false };
+    }
+  }
+
+  // Check single prefixes: "single 20", "s20"
+  const singleMatch = clean.match(/^(?:single|s)\s*([0-9]{1,2}|[a-z]+)$/);
+  if (singleMatch) {
+    const rawVal = singleMatch[1];
+    const seg = parseInt(rawVal, 10) || NUMBER_WORDS[rawVal];
+    if (seg && seg >= 1 && seg <= 20) {
+      return { segment: seg, multiplier: 1, score: seg, isBust: false };
+    }
+  }
+
+  // Check direct numbers 1-20
+  const numDirect = parseInt(clean, 10);
+  if (!isNaN(numDirect) && numDirect >= 1 && numDirect <= 20) {
+    return { segment: numDirect, multiplier: 1, score: numDirect, isBust: false };
+  }
+
+  if (NUMBER_WORDS[clean] !== undefined && NUMBER_WORDS[clean] >= 1 && NUMBER_WORDS[clean] <= 20) {
+    const seg = NUMBER_WORDS[clean];
+    return { segment: seg, multiplier: 1, score: seg, isBust: false };
+  }
+
+  return null;
+}
+
+export function parseVoiceDartsSequence(rawTranscript: string): { darts: DartThrow[]; label: string } | null {
+  const clean = rawTranscript.toLowerCase().replace(/ and /g, ' , ').trim();
+  // Split on commas, "then", semicolons, or "next"
+  const delimiters = /[,;\n]|\bthen\b|\bnext\b/;
+  const parts = clean.split(delimiters).map((s) => s.trim()).filter(Boolean);
+
+  if (parts.length >= 2 && parts.length <= 3) {
+    const darts: DartThrow[] = [];
+    for (const part of parts) {
+      const dart = parseSingleDartPhrase(part);
+      if (dart) {
+        darts.push(dart);
+      } else {
+        return null;
+      }
+    }
+    if (darts.length > 0) {
+      const total = darts.reduce((a, b) => a + b.score, 0);
+      const labels = darts.map((d) => {
+        if (d.segment === 0) return 'Miss';
+        if (d.segment === 50) return 'D-Bull';
+        if (d.segment === 25) return 'Bull';
+        const prefix = d.multiplier === 3 ? 'T' : d.multiplier === 2 ? 'D' : 'S';
+        return `${prefix}${d.segment}`;
+      });
+      return {
+        darts,
+        label: `${labels.join(', ')} (${total})`,
+      };
+    }
+  }
+
+  return null;
+}
 
 function wordsToNumber(text: string): number | null {
   const clean = text
@@ -81,7 +181,8 @@ export function parseVoiceDartsCommand(rawTranscript: string): VoiceParseResult 
     transcript.includes('undo turn') ||
     transcript.includes('go back') ||
     transcript.includes('revert') ||
-    transcript.includes('cancel last')
+    transcript.includes('cancel last') ||
+    transcript.includes('undo last')
   ) {
     return {
       type: 'undo',
@@ -105,6 +206,19 @@ export function parseVoiceDartsCommand(rawTranscript: string): VoiceParseResult 
       type: 'bust',
       score: 0,
       label: 'Bust / No Score (0)',
+      originalTranscript: rawTranscript,
+    };
+  }
+
+  // 3. Multi-Dart Sequence ("twenty, twenty, five", "treble 20, double 16")
+  const seq = parseVoiceDartsSequence(rawTranscript);
+  if (seq) {
+    const total = seq.darts.reduce((a, b) => a + b.score, 0);
+    return {
+      type: 'dart_sequence',
+      darts: seq.darts,
+      score: total,
+      label: seq.label,
       originalTranscript: rawTranscript,
     };
   }

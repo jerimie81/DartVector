@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { GameType, GameRules, PlayerProfile } from '@/lib/types';
-import { Globe, Users, Copy, Check, MessageSquare, Send, Play, Radio } from 'lucide-react';
+import { Globe, Users, Copy, Check, MessageSquare, Send, Play, Radio, Share2, Sparkles, Cloud } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot, setDoc, updateDoc, getDoc } from 'firebase/firestore';
 
 interface MultiplayerLobbyProps {
   onStartOnlineMatch: (gameType: GameType, rules: GameRules, players: PlayerProfile[]) => void;
@@ -16,12 +18,67 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
   const [isHost, setIsHost] = useState<boolean>(false);
   const [roomPlayers, setRoomPlayers] = useState<{ id: string; name: string; avatar: string; isHost: boolean; ready: boolean }[]>([]);
   const [copied, setCopied] = useState<boolean>(false);
+  const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<{ sender: string; text: string; time: string }[]>([]);
   const [chatInput, setChatInput] = useState<string>('');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'connecting' | 'connected'>('idle');
   const channelRef = useRef<BroadcastChannel | null>(null);
 
-  // BroadcastChannel for cross-tab multi-window / multi-device synchronization
+  // Auto-detect ?room= URL parameter if shared
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam && roomParam.length === 6) {
+        setInputCode(roomParam);
+      }
+    }
+  }, []);
+
+  // Real-time Firestore room listener + BroadcastChannel fallback
+  useEffect(() => {
+    if (!roomCode || !isInRoom) return;
+
+    setSyncStatus('connecting');
+
+    // 1. Firestore Cloud onSnapshot listener
+    let unsubFirestore: (() => void) | null = null;
+    try {
+      const roomRef = doc(db, 'rooms', roomCode);
+      unsubFirestore = onSnapshot(
+        roomRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            setSyncStatus('connected');
+            const data = docSnap.data();
+            if (data.players && Array.isArray(data.players)) {
+              setRoomPlayers(data.players);
+            }
+            if (data.chatMessages && Array.isArray(data.chatMessages)) {
+              setChatMessages(data.chatMessages);
+            }
+            if (data.status === 'in_match' && data.rules && data.players) {
+              const formattedPlayers: PlayerProfile[] = data.players.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                avatar: p.avatar,
+                color: '#3B82F6',
+                isBot: false,
+                createdAt: new Date().toISOString(),
+              }));
+              onStartOnlineMatch(data.gameType || 'x01', data.rules, formattedPlayers);
+            }
+          }
+        },
+        (error) => {
+          console.warn('Firestore room sync fallback to peer channel:', error);
+        }
+      );
+    } catch (e) {
+      console.warn('Firestore room init:', e);
+    }
+
+    // 2. BroadcastChannel fallback for same-device multi-tab coordination
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       const bc = new BroadcastChannel('dartvector_online_network');
       channelRef.current = bc;
@@ -40,7 +97,12 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
             { sender: 'System', text: `${payload.name} entered the match room.`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
           ]);
         } else if (type === 'CHAT_MSG') {
-          setChatMessages((prev) => [...prev, payload]);
+          setChatMessages((prev) => {
+            if (prev.some((m) => m.text === payload.text && m.time === payload.time && m.sender === payload.sender)) {
+              return prev;
+            }
+            return [...prev, payload];
+          });
         } else if (type === 'START_MATCH') {
           const formattedPlayers: PlayerProfile[] = payload.players.map((p: any) => ({
             id: p.id,
@@ -53,15 +115,18 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
           onStartOnlineMatch(payload.gameType, payload.rules, formattedPlayers);
         }
       };
-
-      return () => {
-        bc.close();
-        channelRef.current = null;
-      };
     }
-  }, [roomCode, onStartOnlineMatch]);
 
-  const handleCreateRoom = () => {
+    return () => {
+      if (unsubFirestore) unsubFirestore();
+      if (channelRef.current) {
+        channelRef.current.close();
+        channelRef.current = null;
+      }
+    };
+  }, [roomCode, isInRoom, onStartOnlineMatch]);
+
+  const handleCreateRoom = async () => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setRoomCode(code);
     setIsHost(true);
@@ -75,14 +140,35 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
       ready: true,
     };
     setRoomPlayers([hostPlayer]);
+
+    try {
+      const roomRef = doc(db, 'rooms', code);
+      await setDoc(roomRef, {
+        roomCode: code,
+        hostPlayerId: hostPlayer.id,
+        hostName: hostPlayer.name,
+        gameType: 'x01',
+        status: 'waiting',
+        players: [hostPlayer],
+        chatMessages: [
+          { sender: 'System', text: `Room ${code} created. Share the code to invite an opponent.`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        ],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      setSyncStatus('connected');
+    } catch (err) {
+      console.warn('Could not create Firestore room document:', err);
+    }
   };
 
-  const handleJoinRoom = () => {
+  const handleJoinRoom = async () => {
     if (inputCode.length !== 6) {
       alert('Please enter a valid 6-digit match code.');
       return;
     }
-    setRoomCode(inputCode);
+    const code = inputCode;
+    setRoomCode(code);
     setIsHost(false);
     setIsInRoom(true);
 
@@ -94,15 +180,35 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
       ready: true,
     };
 
-    setRoomPlayers([
-      { id: 'p_host_remote', name: 'Match Host', avatar: '👑', isHost: true, ready: true },
-      guestPlayer,
-    ]);
+    setRoomPlayers((prev) => [...prev, guestPlayer]);
+
+    try {
+      const roomRef = doc(db, 'rooms', code);
+      const snap = await getDoc(roomRef);
+      if (snap.exists()) {
+        const existingData = snap.data();
+        const updatedPlayers = [...(existingData.players || []).filter((p: any) => p.id !== guestPlayer.id), guestPlayer];
+        const newChat = [
+          ...(existingData.chatMessages || []),
+          { sender: 'System', text: `${guestPlayer.name} connected from online device.`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        ];
+        await updateDoc(roomRef, {
+          players: updatedPlayers,
+          chatMessages: newChat,
+          updatedAt: Date.now(),
+        });
+        setRoomPlayers(updatedPlayers);
+        setChatMessages(newChat);
+        setSyncStatus('connected');
+      }
+    } catch (err) {
+      console.warn('Could not sync join to Firestore:', err);
+    }
 
     if (channelRef.current) {
       channelRef.current.postMessage({
         type: 'PLAYER_JOINED',
-        code: inputCode,
+        code,
         payload: guestPlayer,
       });
     }
@@ -114,7 +220,16 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSendChat = (e: React.FormEvent) => {
+  const handleCopyInviteLink = () => {
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+      navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
+  const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
@@ -124,7 +239,20 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setChatMessages((prev) => [...prev, msg]);
+    const nextMessages = [...chatMessages, msg];
+    setChatMessages(nextMessages);
+    setChatInput('');
+
+    try {
+      const roomRef = doc(db, 'rooms', roomCode);
+      await updateDoc(roomRef, {
+        chatMessages: nextMessages,
+        updatedAt: Date.now(),
+      });
+    } catch (err) {
+      console.warn('Chat update to firestore:', err);
+    }
+
     if (channelRef.current) {
       channelRef.current.postMessage({
         type: 'CHAT_MSG',
@@ -132,10 +260,9 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
         payload: msg,
       });
     }
-    setChatInput('');
   };
 
-  const handleHostStartGame = () => {
+  const handleHostStartGame = async () => {
     const rules: GameRules = {
       type: 'x01',
       config: {
@@ -157,6 +284,18 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
       createdAt: new Date().toISOString(),
     }));
 
+    try {
+      const roomRef = doc(db, 'rooms', roomCode);
+      await updateDoc(roomRef, {
+        status: 'in_match',
+        gameType: 'x01',
+        rules,
+        updatedAt: Date.now(),
+      });
+    } catch (err) {
+      console.warn('Host start game sync:', err);
+    }
+
     if (channelRef.current) {
       channelRef.current.postMessage({
         type: 'START_MATCH',
@@ -174,13 +313,20 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
       <div className="flex items-center justify-between border-b border-zinc-800 pb-5">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-            <Radio className="w-6 h-6 animate-pulse text-amber-400" />
+            <Cloud className="w-6 h-6 animate-pulse text-amber-400" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-white">Online Matchmaking Hub</h2>
-            <p className="text-xs text-zinc-400">Real-time WebSocket & Peer sync match coordination</p>
+            <h2 className="text-xl font-black text-white">Online Cloud Match Hub</h2>
+            <p className="text-xs text-zinc-400">Real-time Cloud & Local Peer match synchronization</p>
           </div>
         </div>
+
+        {isInRoom && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>{syncStatus === 'connected' ? 'Cloud Live Sync' : 'Connecting Room...'}</span>
+          </div>
+        )}
       </div>
 
       {!isInRoom ? (
@@ -191,7 +337,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
               <div className="text-xs font-bold uppercase tracking-wider text-amber-400">Host Match</div>
               <h3 className="text-lg font-black text-white mt-1">Create Private Arena</h3>
               <p className="text-xs text-zinc-400 mt-2">
-                Generate a unique 6-digit room code to play against a friend in real time with live scoreboard sync.
+                Generate a unique 6-digit room code to play against a friend on any device with live cloud sync.
               </p>
             </div>
 
@@ -246,7 +392,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
       ) : (
         /* INSIDE LOBBY VIEW */
         <div className="flex flex-col gap-6">
-          {/* Room Code Banner */}
+          {/* Room Code & Share Link Banner */}
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-zinc-500">Match Arena Code</div>
@@ -254,14 +400,27 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
                 {roomCode}
               </div>
             </div>
-            <button
-              id="copy-room-code-btn"
-              onClick={handleCopyCode}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold rounded-xl border border-zinc-700 transition-colors"
-            >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'Copied to Clipboard!' : 'Copy Code'}</span>
-            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                id="copy-invite-link-btn"
+                onClick={handleCopyInviteLink}
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold rounded-xl border border-zinc-700 transition-colors"
+                title="Copy shareable direct join link"
+              >
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                <span>{copiedLink ? 'Link Copied!' : 'Share Link'}</span>
+              </button>
+
+              <button
+                id="copy-room-code-btn"
+                onClick={handleCopyCode}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black rounded-xl transition-colors"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                <span>{copied ? 'Code Copied!' : 'Copy Code'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Roster & Chat Grid */}
@@ -349,3 +508,4 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
     </div>
   );
 };
+

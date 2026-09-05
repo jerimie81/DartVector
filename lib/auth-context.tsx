@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import {
   User,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from 'firebase/auth';
@@ -19,6 +21,7 @@ import {
 import { auth, db, googleProvider } from './firebase';
 import { MatchRecord, PlayerProfile } from './types';
 import { storageEngine } from './storage';
+import { calculateAllTimePlayerStats } from './career-stats';
 
 export interface UserStats {
   userId: string;
@@ -154,6 +157,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uploaded++;
       }
 
+      // Compute aggregate stats across all local/cloud matches
+      if (localMatches.length > 0) {
+        const dummyPlayer: PlayerProfile = {
+          id: user.uid,
+          name: user.displayName || 'Player',
+          avatar: '🎯',
+          color: '#3B82F6',
+          isBot: false,
+          createdAt: '',
+        };
+        const computed = calculateAllTimePlayerStats([dummyPlayer], localMatches)[0];
+        if (computed) {
+          const userRef = doc(db, 'users', user.uid);
+          await setDoc(
+            userRef,
+            {
+              matchesPlayed: computed.matchesPlayed,
+              matchesWon: computed.matchesWon,
+              legsPlayed: computed.legsPlayed,
+              legsWon: computed.legsWon,
+              career3DAvg: computed.overall3DartAvg,
+              highestTurn: computed.highestTurn,
+              highestCheckout: computed.highestCheckout,
+              count180s: computed.scores180,
+              count140Plus: computed.scores140Plus,
+              count100Plus: computed.scores100Plus,
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+        }
+      }
+
       await loadUserStats(user.uid);
       setSyncStatus(`Uploaded ${uploaded} matches to Cloud`);
       setTimeout(() => setSyncStatus(null), 3500);
@@ -217,6 +253,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [syncCloudHistory, syncLocalToCloud]);
 
   useEffect(() => {
+    // Check for redirect sign-in result on page load
+    if (typeof window !== 'undefined') {
+      getRedirectResult(auth)
+        .then((result) => {
+          if (result && result.user) {
+            handleUserLogin(result.user);
+          }
+        })
+        .catch((error) => {
+          console.warn('Redirect sign-in check:', error);
+        });
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -232,11 +281,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     try {
+      const isStandalone =
+        typeof window !== 'undefined' &&
+        (window.matchMedia('(display-mode: standalone)').matches ||
+          (window.navigator as any).standalone === true);
+
+      if (isStandalone) {
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+
       const result = await signInWithPopup(auth, googleProvider);
       if (result.user) {
         await handleUserLogin(result.user);
       }
     } catch (error: any) {
+      if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr) {
+          console.error('Redirect sign in error:', redirectErr);
+        }
+      }
       console.error('Google Sign-in failed:', error);
       alert('Sign in failed. Please try again.');
     }

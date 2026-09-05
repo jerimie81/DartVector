@@ -36,6 +36,7 @@ export interface AroundTheClockRules {
 export interface KillerRules {
   startingLives: number;
   doubleToQualify: boolean;
+  selfHitPenalty?: boolean;
 }
 
 export interface ShanghaiRules {

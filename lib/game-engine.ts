@@ -387,6 +387,80 @@ export function applyDartToState(
       pBob.score += roundDouble * 2;
     }
     nextState.bobs27State[activePlayer.id] = pBob;
+  } else if (rules.type === 'killer') {
+    const pKiller = { ...nextState.killerState[activePlayer.id] };
+    const doubleToQualify = rules.config.doubleToQualify;
+    const selfHitPenalty = rules.config.selfHitPenalty !== false;
+
+    if (!pKiller.eliminated) {
+      // Phase 1: Assignment
+      if (pKiller.assignedDouble === undefined) {
+        const isDouble = dart.multiplier === 2 || dart.segment === 50;
+        const qualifies = doubleToQualify ? isDouble : dart.segment > 0;
+        if (qualifies && dart.segment > 0) {
+          const alreadyClaimed = state.match.players.some(
+            (p) => p.id !== activePlayer.id && nextState.killerState[p.id]?.assignedDouble === dart.segment
+          );
+          if (!alreadyClaimed) {
+            pKiller.assignedDouble = dart.segment;
+          }
+        }
+      }
+      // Phase 2: Becoming a Killer
+      else if (!pKiller.isKiller) {
+        const isDouble = dart.multiplier === 2 || dart.segment === 50;
+        const isHitOwn = dart.segment === pKiller.assignedDouble && (doubleToQualify ? isDouble : true);
+        if (isHitOwn) {
+          pKiller.isKiller = true;
+        }
+      }
+      // Phase 3: Combat (Active Killer attacking opponents or self-hit)
+      else if (pKiller.isKiller) {
+        const isDouble = dart.multiplier === 2 || dart.segment === 50;
+        const validAttack = doubleToQualify ? isDouble : dart.segment > 0;
+
+        if (validAttack && dart.segment > 0) {
+          if (dart.segment === pKiller.assignedDouble) {
+            if (selfHitPenalty) {
+              pKiller.lives = Math.max(0, pKiller.lives - 1);
+              if (pKiller.lives <= 0) {
+                pKiller.eliminated = true;
+              }
+            }
+          } else {
+            state.match.players.forEach((otherP) => {
+              if (otherP.id !== activePlayer.id) {
+                const targetState = { ...nextState.killerState[otherP.id] };
+                if (targetState.assignedDouble === dart.segment && !targetState.eliminated) {
+                  const damage = doubleToQualify ? 1 : Math.max(1, dart.multiplier);
+                  targetState.lives = Math.max(0, targetState.lives - damage);
+                  if (targetState.lives <= 0) {
+                    targetState.eliminated = true;
+                  }
+                  nextState.killerState[otherP.id] = targetState;
+                }
+              }
+            });
+          }
+        }
+      }
+      nextState.killerState[activePlayer.id] = pKiller;
+    }
+
+    // Win condition check: Last non-eliminated player standing
+    const activePlayersAlive = state.match.players.filter(
+      (p) => !nextState.killerState[p.id]?.eliminated
+    );
+
+    if (state.match.players.length > 1) {
+      if (activePlayersAlive.length <= 1) {
+        isWinDart = true;
+        turnFinished = true;
+      }
+    } else if (state.match.players.length === 1 && pKiller.isKiller) {
+      isWinDart = true;
+      turnFinished = true;
+    }
   }
 
   // --- IF TURN IS FINISHED ---
@@ -571,8 +645,18 @@ export function applyDartToState(
       }
     }
 
-    // Normal Turn Transition: Move to next player
-    const nextPlayerIndex = (state.activePlayerIndex + 1) % state.match.players.length;
+    // Normal Turn Transition: Move to next player (skipping eliminated players in killer mode)
+    let nextPlayerIndex = (state.activePlayerIndex + 1) % state.match.players.length;
+    if (rules.type === 'killer') {
+      let attempts = 0;
+      while (
+        nextState.killerState[state.match.players[nextPlayerIndex].id]?.eliminated &&
+        attempts < state.match.players.length
+      ) {
+        nextPlayerIndex = (nextPlayerIndex + 1) % state.match.players.length;
+        attempts++;
+      }
+    }
     nextState.match = {
       ...state.match,
       legs: [...state.match.legs.slice(0, -1), updatedLeg],

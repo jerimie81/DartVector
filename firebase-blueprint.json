@@ -61,6 +61,39 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userId", "name", "avatar", "color", "isBot", "createdAt"]
+    },
+    "OnlineRoom": {
+      "title": "OnlineRoom",
+      "description": "Multiplayer live match room for real-time turn synchronization",
+      "type": "object",
+      "properties": {
+        "roomCode": { "type": "string" },
+        "hostPlayerId": { "type": "string" },
+        "hostName": { "type": "string" },
+        "gameType": { "type": "string" },
+        "status": { "type": "string" },
+        "players": { "type": "array" },
+        "chatMessages": { "type": "array" },
+        "matchDataJson": { "type": "string" },
+        "updatedAt": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["roomCode", "hostPlayerId", "status", "players", "createdAt"]
+    },
+    "UserLeague": {
+      "title": "UserLeague",
+      "description": "House league tournament and standings records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "format": { "type": "string" },
+        "status": { "type": "string" },
+        "leagueDataJson": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "status", "leagueDataJson", "createdAt"]
     }
   },
   "firestore": {
@@ -75,6 +108,14 @@
     "users/{userId}/custom_players/{playerId}": {
       "entity": "SavedCustomPlayer",
       "description": "Custom player roster for the user"
+    },
+    "users/{userId}/leagues/{leagueId}": {
+      "entity": "UserLeague",
+      "description": "House league tournaments and standings"
+    },
+    "rooms/{roomCode}": {
+      "entity": "OnlineRoom",
+      "description": "Real-time online multiplayer game lobby and match sync"
     }
   }
 }

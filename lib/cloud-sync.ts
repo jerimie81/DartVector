@@ -78,3 +78,45 @@ export async function syncPlayerToCloud(player: PlayerProfile): Promise<boolean>
     return false;
   }
 }
+
+export async function syncLeagueToCloud(league: any): Promise<boolean> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return false;
+
+  try {
+    const leagueRef = doc(db, 'users', currentUser.uid, 'leagues', league.id);
+    await setDoc(
+      leagueRef,
+      {
+        id: league.id,
+        userId: currentUser.uid,
+        name: league.name || 'House League',
+        format: league.format || 'round_robin',
+        status: league.status || 'active',
+        createdAt: league.createdAt || new Date().toISOString(),
+        leagueDataJson: JSON.stringify(league),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return true;
+  } catch (err) {
+    console.error('Error syncing league to Firestore cloud:', err);
+    return false;
+  }
+}
+
+export async function deleteLeagueFromCloud(leagueId: string): Promise<boolean> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return false;
+
+  try {
+    const leagueRef = doc(db, 'users', currentUser.uid, 'leagues', leagueId);
+    await deleteDoc(leagueRef);
+    return true;
+  } catch (err) {
+    console.error('Error deleting league from Firestore cloud:', err);
+    return false;
+  }
+}
+

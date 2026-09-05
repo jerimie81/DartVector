@@ -12,11 +12,9 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Users Profile Collection
+    // Users Profile Collection (Locked down: only owner can read and write)
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow read, write: if isOwner(userId);
       
       // User Match History Subcollection
       match /matches/{matchId} {
@@ -27,6 +25,18 @@ service cloud.firestore {
       match /custom_players/{playerId} {
         allow read, write: if isOwner(userId);
       }
+
+      // User House Leagues Subcollection
+      match /leagues/{leagueId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Real-Time Online Multiplayer Rooms
+    match /rooms/{roomCode} {
+      allow read: if true;
+      allow create, update: if roomCode.size() == 6;
+      allow delete: if isAuthenticated();
     }
   }
 }

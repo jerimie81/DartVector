@@ -6,7 +6,7 @@ Prioritized by severity. "Fix" items reference function/component names, not lin
 
 ## P0 — Broken/Misleading Functionality
 
-- [ ] **Implement Killer game logic in `applyDartToState` (`lib/game-engine.ts`)**
+- [x] **Implement Killer game logic in `applyDartToState` (`lib/game-engine.ts`)**
   - Add `rules.type === 'killer'` branch alongside the existing `x01`/`cricket`/`around_the_clock`/`shanghai`/`bobs_27` branches.
   - Phase 1 (assignment): first dart(s) at own double assign `killerState[playerId].assignedDouble`; until every player has an assigned double, hits elsewhere are no-ops.
   - Phase 2 (killer status): hitting your own assigned double after assignment sets `isKiller: true`.
@@ -16,7 +16,7 @@ Prioritized by severity. "Fix" items reference function/component names, not lin
   - Update `KillerRules`/`KillerPlayerState` in `lib/types.ts` if fields are missing (e.g. self-hit toggle).
   - Add unit tests (see P0 testing item) that exercise all four phases before merging.
 
-- [ ] **Fix or relabel "Online Multiplayer" (`components/multiplayer/MultiplayerLobby.tsx`)**
+- [x] **Fix or relabel "Online Multiplayer" (`components/multiplayer/MultiplayerLobby.tsx`)**
   - Immediate: correct the UI copy — "Real-time WebSocket & Peer sync match coordination" is false; either implement it or change the string to something accurate ("Same-device tab sync").
   - Real fix — pick one transport and implement:
     - **Firestore-backed rooms** (simplest given the app already depends on Firebase): a `rooms/{roomCode}` doc with a `players` array and a `currentTurn`/`lastDart` field, written via `setDoc`/`updateDoc` and subscribed to via `onSnapshot` for near-real-time sync across devices. Reuses the existing Firebase dependency — no new infra.
@@ -24,14 +24,14 @@ Prioritized by severity. "Fix" items reference function/component names, not lin
   - Replace the `BroadcastChannel` listener with the chosen transport; keep `BroadcastChannel` only as a same-device fallback layer if you want, but never as the sole mechanism behind an "Online"-branded feature.
   - Add Firestore rules for the new `rooms` collection (open write for room members only, TTL/cleanup for abandoned rooms).
 
-- [ ] **Lock down `firestore.rules` user-profile read access**
+- [x] **Lock down `firestore.rules` user-profile read access**
   - Change `match /users/{userId} { allow read: if isAuthenticated(); }` to `allow read: if isOwner(userId);`.
   - If any feature actually needs public-readable profile fields (e.g. a future leaderboard), split those fields into a separate `public_profiles/{userId}` doc with only non-sensitive fields (displayName, avatar, headline stats) rather than exposing the full profile doc.
 
-- [ ] **Add a Google `signInWithRedirect` fallback (`lib/auth-context.tsx`)**
+- [x] **Add a Google `signInWithRedirect` fallback (`lib/auth-context.tsx`)**
   - Detect standalone/PWA display mode (`window.matchMedia('(display-mode: standalone)')`) or in-app WebView, and use `signInWithRedirect` + `getRedirectResult` instead of `signInWithPopup` in those contexts, since popups are frequently blocked there.
 
-- [ ] **Fix or remove the dead Firestore user-aggregate fields**
+- [x] **Fix or remove the dead Firestore user-aggregate fields**
   - Either: update `matchesPlayed`, `career3DAvg`, `highestTurn`, `highestCheckout`, `count180s` on the `users/{uid}` doc inside `syncMatchToCloud` (or a Cloud Function trigger on match write) so they're actually meaningful for future server-side leaderboard queries, or
   - Remove them from `UserStats`/`handleUserLogin` entirely and rely solely on the existing client-side `career-stats.ts` computation, to avoid the illusion of a stat that never updates.
 

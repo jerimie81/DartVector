@@ -1,11 +1,12 @@
 // DartMaster Pro - High Capacity Match History & Analytics Storage Subsystem (IndexedDB + LocalStorage)
 import { MatchRecord, PlayerProfile, PlayerMatchStats, TeamMatchStats, TurnRecord } from './types';
-import { syncMatchToCloud, deleteMatchFromCloud, syncPlayerToCloud } from './cloud-sync';
+import { syncMatchToCloud, deleteMatchFromCloud, syncPlayerToCloud, syncLeagueToCloud, deleteLeagueFromCloud } from './cloud-sync';
 
 const DB_NAME = 'dartmaster_pro_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_MATCHES = 'matches';
 const STORE_PLAYERS = 'players';
+const STORE_LEAGUES = 'leagues';
 
 export const DEFAULT_PLAYERS: PlayerProfile[] = [
   {
@@ -119,6 +120,9 @@ class StorageSubsystem {
         if (!db.objectStoreNames.contains(STORE_PLAYERS)) {
           db.createObjectStore(STORE_PLAYERS, { keyPath: 'id' });
         }
+        if (!db.objectStoreNames.contains(STORE_LEAGUES)) {
+          db.createObjectStore(STORE_LEAGUES, { keyPath: 'id' });
+        }
       };
 
       request.onsuccess = (event: any) => {
@@ -224,8 +228,8 @@ class StorageSubsystem {
         const list: MatchRecord[] = local ? JSON.parse(local) : [];
         const filtered = list.filter((m) => m.id !== match.id);
         filtered.unshift(match);
-        // Keep last 100 in localStorage
-        localStorage.setItem('dartmaster_matches', JSON.stringify(filtered.slice(0, 100)));
+        // Keep last 500 in localStorage
+        localStorage.setItem('dartmaster_matches', JSON.stringify(filtered.slice(0, 500)));
         return;
       }
 
@@ -297,7 +301,7 @@ class StorageSubsystem {
       deleteMatchFromCloud(id).catch(() => {});
       const db = await this.initDB();
       if (!db) {
-        const matches = await this.getMatches(200);
+        const matches = await this.getMatches(500);
         const filtered = matches.filter((m) => m.id !== id);
         localStorage.setItem('dartmaster_matches', JSON.stringify(filtered));
         return;
@@ -306,6 +310,93 @@ class StorageSubsystem {
       return new Promise((resolve) => {
         const tx = db.transaction(STORE_MATCHES, 'readwrite');
         const store = tx.objectStore(STORE_MATCHES);
+        store.delete(id);
+        tx.oncomplete = () => resolve();
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  // --- LEAGUES & TOURNAMENTS MANAGEMENT ---
+  public async getLeagues(): Promise<any[]> {
+    try {
+      const db = await this.initDB();
+      if (!db) {
+        const local = localStorage.getItem('dartmaster_leagues');
+        return local ? JSON.parse(local) : [];
+      }
+
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_LEAGUES, 'readonly');
+        const store = tx.objectStore(STORE_LEAGUES);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  public async getLeagueById(id: string): Promise<any | null> {
+    try {
+      const db = await this.initDB();
+      if (!db) {
+        const list = await this.getLeagues();
+        return list.find((l) => l.id === id) || null;
+      }
+
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_LEAGUES, 'readonly');
+        const store = tx.objectStore(STORE_LEAGUES);
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  public async saveLeague(league: any): Promise<void> {
+    try {
+      syncLeagueToCloud(league).catch(() => {});
+      const db = await this.initDB();
+      if (!db) {
+        const list = await this.getLeagues();
+        const filtered = list.filter((l) => l.id !== league.id);
+        filtered.unshift(league);
+        localStorage.setItem('dartmaster_leagues', JSON.stringify(filtered.slice(0, 100)));
+        return;
+      }
+
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_LEAGUES, 'readwrite');
+        const store = tx.objectStore(STORE_LEAGUES);
+        const req = store.put(league);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      // fallback
+    }
+  }
+
+  public async deleteLeague(id: string): Promise<void> {
+    try {
+      deleteLeagueFromCloud(id).catch(() => {});
+      const db = await this.initDB();
+      if (!db) {
+        const list = await this.getLeagues();
+        const filtered = list.filter((l) => l.id !== id);
+        localStorage.setItem('dartmaster_leagues', JSON.stringify(filtered));
+        return;
+      }
+
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_LEAGUES, 'readwrite');
+        const store = tx.objectStore(STORE_LEAGUES);
         store.delete(id);
         tx.oncomplete = () => resolve();
       });
