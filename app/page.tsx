@@ -13,6 +13,7 @@ import {
   createNewMatch,
   applyDartToState,
   applyTotalScoreToState,
+  endCurrentTurn,
 } from '@/lib/game-engine';
 import { simulateBotThrow, selectModeBotTarget } from '@/lib/dartbot';
 import { soundEngine } from '@/lib/sound-system';
@@ -253,6 +254,34 @@ export default function DartVectorApp() {
     setGameState(result.nextState);
   }, [gameState, isBotThinking]);
 
+  // End Current Turn & Rotate Player
+  const handleEndTurn = useCallback(() => {
+    if (!gameState || gameState.isMatchOver || isBotThinking) return;
+
+    // Save previous state for undo
+    historyStackRef.current.push(JSON.parse(JSON.stringify(gameState)));
+
+    const activePlayer = gameState.match.players[gameState.activePlayerIndex];
+    const result = endCurrentTurn(gameState);
+
+    if (result.turnCompleted) {
+      if (result.turnScore > 0 || result.isBust) {
+        soundEngine.callScore(result.turnScore, result.isBust);
+      }
+
+      if (result.legCompleted && !result.matchCompleted) {
+        soundEngine.callGameShot(false, activePlayer.name);
+      } else if (!result.matchCompleted) {
+        const nextPlayer = result.nextState.match.players[result.nextState.activePlayerIndex];
+        if (nextPlayer && nextPlayer.id !== activePlayer.id) {
+          soundEngine.speak(`Next player, ${nextPlayer.name}`);
+        }
+      }
+    }
+
+    setGameState(result.nextState);
+  }, [gameState, isBotThinking]);
+
   // Undo Last Dart
   const handleUndoDart = useCallback(() => {
     if (historyStackRef.current.length > 0) {
@@ -461,8 +490,9 @@ export default function DartVectorApp() {
                 <MatchScoreboard
                   gameState={gameState}
                   onSelectPlayer={(idx) => {
-                    setGameState((prev) => ({ ...prev, activePlayerIndex: idx }));
+                    setGameState((prev) => ({ ...prev, activePlayerIndex: idx, currentTurnDarts: [] }));
                   }}
+                  onEndTurn={handleEndTurn}
                 />
 
                 {/* Input Pad (NumPad, Dart-by-Dart, Voice) */}
@@ -472,6 +502,7 @@ export default function DartVectorApp() {
                   currentTurnDarts={gameState.currentTurnDarts}
                   onThrowDart={handleThrowDart}
                   onApplyTurnTotal={handleApplyTurnTotal}
+                  onEndTurn={handleEndTurn}
                   onUndoDart={handleUndoDart}
                   onUndoTurn={handleUndoTurn}
                   canUndoDart={gameState.currentTurnDarts.length > 0}

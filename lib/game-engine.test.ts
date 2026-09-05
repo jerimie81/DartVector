@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createNewMatch, applyDartToState } from './game-engine';
+import { createNewMatch, applyDartToState, endCurrentTurn } from './game-engine';
 import { GameRules, PlayerProfile, DartThrow } from './types';
 import { getCheckoutSuggestion } from './checkout-engine';
 import { coordinatesToDart, getIdealTargetCoords } from './dartboard-geometry';
@@ -155,13 +155,13 @@ describe('Dartboard Geometry', () => {
 describe('Voice Parser', () => {
   it('parses single dart spoken phrases', () => {
     const t20 = parseSingleDartPhrase('treble twenty');
-    expect(t20).toEqual({ segment: 20, multiplier: 3, score: 60, isBust: false });
+    expect(t20).toEqual({ segment: 20, multiplier: 3, score: 60, label: 'T20', isBust: false });
 
     const d16 = parseSingleDartPhrase('double 16');
-    expect(d16).toEqual({ segment: 16, multiplier: 2, score: 32, isBust: false });
+    expect(d16).toEqual({ segment: 16, multiplier: 2, score: 32, label: 'D16', isBust: false });
 
     const bull = parseSingleDartPhrase('bullseye');
-    expect(bull).toEqual({ segment: 50, multiplier: 2, score: 50, isBust: false });
+    expect(bull).toEqual({ segment: 50, multiplier: 2, score: 50, label: 'D-BULL', isBust: false });
   });
 
   it('parses multi-dart sequences accurately', () => {
@@ -173,12 +173,47 @@ describe('Voice Parser', () => {
     expect(seq?.darts[2].segment).toBe(5);
   });
 
-  it('parses undo and bust commands', () => {
+  it('parses undo, bust, and end turn commands', () => {
     const undoRes = parseVoiceDartsCommand('undo last dart');
     expect(undoRes.type).toBe('undo');
 
     const bustRes = parseVoiceDartsCommand('bust');
     expect(bustRes.type).toBe('bust');
+
+    const endTurnRes = parseVoiceDartsCommand('end turn');
+    expect(endTurnRes.type).toBe('end_turn');
+
+    const nextPlayerRes = parseVoiceDartsCommand('next player');
+    expect(nextPlayerRes.type).toBe('end_turn');
+  });
+});
+
+describe('Turn Management and Player Switching', () => {
+  it('rotates activePlayerIndex when endCurrentTurn is triggered', () => {
+    const p1: PlayerProfile = { id: 'p1', name: 'Alice', avatar: '🎯', color: '#ff0000', isBot: false, createdAt: '2025' };
+    const p2: PlayerProfile = { id: 'p2', name: 'Bob', avatar: '⚡', color: '#00ff00', isBot: false, createdAt: '2025' };
+    const x01Rules: GameRules = {
+      type: 'x01',
+      config: { startingScore: 501, doubleIn: false, doubleOut: true, legsToWin: 3 },
+    };
+    const state = createNewMatch('x01', x01Rules, [p1, p2]);
+
+    expect(state.activePlayerIndex).toBe(0);
+
+    // Player 1 throws 1 dart
+    const throw1 = applyDartToState(state, { segment: 20, multiplier: 3, score: 60, label: 'T20' });
+    expect(throw1.nextState.activePlayerIndex).toBe(0);
+    expect(throw1.nextState.currentTurnDarts.length).toBe(1);
+
+    // End turn manually
+    const endTurnResult = endCurrentTurn(throw1.nextState);
+    expect(endTurnResult.turnCompleted).toBe(true);
+    expect(endTurnResult.nextState.activePlayerIndex).toBe(1);
+    expect(endTurnResult.nextState.currentTurnDarts.length).toBe(0);
+
+    // Player 2 ends turn immediately (pass)
+    const p2EndTurn = endCurrentTurn(endTurnResult.nextState);
+    expect(p2EndTurn.nextState.activePlayerIndex).toBe(0);
   });
 });
 

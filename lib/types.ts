@@ -103,6 +103,7 @@ export interface TurnRecord {
 export interface CricketPlayerState {
   marks: Record<number, number>; // 15, 16, 17, 18, 19, 20, 25 (Bull) -> marks count (0-3+)
   score: number;
+  points?: number; // alias for score
 }
 
 export interface KillerPlayerState {

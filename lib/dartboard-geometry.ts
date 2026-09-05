@@ -158,11 +158,17 @@ export function coordinatesToDart(x: number, y: number): {
 }
 
 // Get the ideal physical target coordinates (x, y in mm) for a target string or segment/multiplier
-export function getIdealTargetCoords(target: string | { segment: number; multiplier: number }): { x: number; y: number } {
+export function getIdealTargetCoords(
+  target: string | { segment: number; multiplier: number } | number,
+  multArg?: number
+): { x: number; y: number } {
   let seg = 20;
   let mult = 1;
 
-  if (typeof target === 'string') {
+  if (typeof target === 'number') {
+    seg = target;
+    mult = multArg || 1;
+  } else if (typeof target === 'string') {
     const upper = target.toUpperCase().trim();
     if (upper === 'BULL' || upper === '25' || upper === 'S25') {
       seg = 25;

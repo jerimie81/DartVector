@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { DartThrow, GameRules } from '@/lib/types';
 import { coordinatesToDart, getIdealTargetCoords } from '@/lib/dartboard-geometry';
-import { Mic, MicOff, Delete, RotateCcw, Check, Sparkles } from 'lucide-react';
+import { Mic, MicOff, Delete, RotateCcw, Check, Sparkles, SkipForward } from 'lucide-react';
 import { parseVoiceDartsCommand } from '@/lib/voice-parser';
 
 interface InputPadProps {
@@ -12,6 +12,7 @@ interface InputPadProps {
   currentTurnDarts: DartThrow[];
   onThrowDart: (dart: DartThrow) => void;
   onApplyTurnTotal: (score: number) => void;
+  onEndTurn: () => void;
   onUndoDart: () => void;
   onUndoTurn: () => void;
   canUndoDart: boolean;
@@ -27,6 +28,7 @@ export const InputPad: React.FC<InputPadProps> = ({
   currentTurnDarts,
   onThrowDart,
   onApplyTurnTotal,
+  onEndTurn,
   onUndoDart,
   onUndoTurn,
   canUndoDart,
@@ -42,6 +44,12 @@ export const InputPad: React.FC<InputPadProps> = ({
 
   const handleVoiceCommand = useCallback((transcript: string) => {
     const result = parseVoiceDartsCommand(transcript);
+
+    if (result.type === 'end_turn') {
+      onEndTurn();
+      setVoiceFeedback('⏩ Voice Command: Ended turn, passed to next player');
+      return;
+    }
 
     if (result.type === 'undo') {
       if (canUndoDart) {
@@ -76,8 +84,8 @@ export const InputPad: React.FC<InputPadProps> = ({
       return;
     }
 
-    setVoiceFeedback(`❓ Could not parse "${transcript}". Try saying "140", "Ton 80", or "Bust"`);
-  }, [onApplyTurnTotal, onUndoDart, onUndoTurn, canUndoDart, canUndoTurn]);
+    setVoiceFeedback(`❓ Could not parse "${transcript}". Try saying "140", "Ton 80", "End turn", or "Bust"`);
+  }, [onApplyTurnTotal, onEndTurn, onUndoDart, onUndoTurn, onThrowDart, canUndoDart, canUndoTurn]);
 
   // Initialize Speech Recognition for Voice Caller Input
   useEffect(() => {
@@ -143,7 +151,10 @@ export const InputPad: React.FC<InputPadProps> = ({
   };
 
   const handleKeypadSubmit = () => {
-    if (!keypadInput) return;
+    if (!keypadInput) {
+      onEndTurn();
+      return;
+    }
     const score = parseInt(keypadInput, 10);
     if (!isNaN(score) && score >= 0 && score <= 180) {
       onApplyTurnTotal(score);
@@ -244,57 +255,80 @@ export const InputPad: React.FC<InputPadProps> = ({
         </div>
       )}
 
-      {/* Current Turn Darts Status Chips & Large Undo Bar */}
-      <div className="flex items-center justify-between bg-zinc-950/80 px-3 py-2 rounded-xl border border-zinc-800/80">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-zinc-400">Current Turn:</span>
-          <div className="flex gap-1.5">
-            {[0, 1, 2].map((idx) => {
-              const dart = currentTurnDarts[idx];
-              return (
-                <div
-                  key={`turn-dart-${idx}`}
-                  className={`min-w-[42px] h-7 px-2 flex items-center justify-center rounded-md text-xs font-black border transition-all ${
-                    dart
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                      : 'bg-zinc-900/60 text-zinc-600 border-zinc-800'
-                  }`}
-                >
-                  {dart ? dart.label : `D${idx + 1}`}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Current Turn Darts Status Chips & End Turn / Large Undo Bar */}
+      {(() => {
+        const turnScore = currentTurnDarts.reduce((acc, d) => acc + (d.isBust ? 0 : d.score), 0);
+        return (
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-zinc-950/80 px-3 py-2 rounded-xl border border-zinc-800/80">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-zinc-400">Current Turn:</span>
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map((idx) => {
+                  const dart = currentTurnDarts[idx];
+                  return (
+                    <div
+                      key={`turn-dart-${idx}`}
+                      className={`min-w-[42px] h-7 px-2 flex items-center justify-center rounded-md text-xs font-black border transition-all ${
+                        dart
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                          : 'bg-zinc-900/60 text-zinc-600 border-zinc-800'
+                      }`}
+                    >
+                      {dart ? dart.label : `D${idx + 1}`}
+                    </div>
+                  );
+                })}
+              </div>
+              {currentTurnDarts.length > 0 && (
+                <span className="text-xs font-bold text-amber-400 ml-1">
+                  ({turnScore} pts)
+                </span>
+              )}
+            </div>
 
-        {/* Undo controls */}
-        <div className="flex items-center gap-1.5">
-          {canUndoDart && (
-            <button
-              id="undo-dart-btn"
-              onClick={onUndoDart}
-              disabled={disabled}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg transition-colors border border-amber-500/30 active:scale-95"
-              title="Undo last thrown dart"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Undo Dart</span>
-            </button>
-          )}
-          {canUndoTurn && (
-            <button
-              id="undo-turn-btn"
-              onClick={onUndoTurn}
-              disabled={disabled}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-red-500/30 active:scale-95"
-              title="Undo entire previous turn"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Undo Turn</span>
-            </button>
-          )}
-        </div>
-      </div>
+            {/* Action controls: End Turn & Undo */}
+            <div className="flex items-center gap-1.5">
+              <button
+                id="end-turn-btn"
+                onClick={onEndTurn}
+                disabled={disabled}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                title="Finish turn and switch to next player"
+              >
+                <SkipForward className="w-3.5 h-3.5 fill-current" />
+                <span>
+                  {currentTurnDarts.length > 0 ? `End Turn (${turnScore})` : 'End Turn'}
+                </span>
+              </button>
+
+              {canUndoDart && (
+                <button
+                  id="undo-dart-btn"
+                  onClick={onUndoDart}
+                  disabled={disabled}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg transition-colors border border-amber-500/30 active:scale-95"
+                  title="Undo last thrown dart"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Undo Dart</span>
+                </button>
+              )}
+              {canUndoTurn && (
+                <button
+                  id="undo-turn-btn"
+                  onClick={onUndoTurn}
+                  disabled={disabled}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-red-500/30 active:scale-95"
+                  title="Undo entire previous turn"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Undo Turn</span>
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* HOUSE QUICK SCORES TAB (Uncle / House League Mode) */}
       {activeTab === 'house_quick' && (
@@ -416,11 +450,24 @@ export const InputPad: React.FC<InputPadProps> = ({
             <button
               id="numpad-submit-btn"
               onClick={handleKeypadSubmit}
-              disabled={disabled || !keypadInput}
-              className="col-span-2 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-lg border border-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all flex items-center justify-center gap-2"
+              disabled={disabled}
+              className={`col-span-2 h-12 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-lg border active:scale-95 transition-all flex items-center justify-center gap-2 ${
+                keypadInput
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 border-emerald-400'
+                  : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 border-amber-400 font-extrabold'
+              }`}
             >
-              <Check className="w-5 h-5 stroke-[3]" />
-              <span>Enter Score {keypadInput ? `(${keypadInput})` : ''}</span>
+              {keypadInput ? (
+                <>
+                  <Check className="w-5 h-5 stroke-[3]" />
+                  <span>Enter Score ({keypadInput})</span>
+                </>
+              ) : (
+                <>
+                  <SkipForward className="w-4 h-4 fill-current" />
+                  <span>End Turn / Pass</span>
+                </>
+              )}
             </button>
           </div>
         </div>

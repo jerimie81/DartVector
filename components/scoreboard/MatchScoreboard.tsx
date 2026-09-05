@@ -3,17 +3,19 @@
 import React from 'react';
 import { GameState } from '@/lib/game-engine';
 import { getCheckoutSuggestion } from '@/lib/checkout-engine';
-import { Trophy, Target, Zap, Flame, Award, Heart, Shield, Users, Crown } from 'lucide-react';
+import { Trophy, Target, Zap, Flame, Award, Heart, Shield, Users, Crown, SkipForward } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MatchScoreboardProps {
   gameState: GameState;
   onSelectPlayer?: (index: number) => void;
+  onEndTurn?: () => void;
 }
 
 export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
   gameState,
   onSelectPlayer,
+  onEndTurn,
 }) => {
   const [isChalkboardMode, setIsChalkboardMode] = React.useState<boolean>(false);
   const {
@@ -230,31 +232,45 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
           </div>
         </div>
 
-        {/* Darts in hand indicator */}
-        <div className="flex items-center gap-4 bg-zinc-950/80 px-4 py-2 rounded-xl border border-zinc-800/80">
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] uppercase font-bold text-zinc-400">Darts in Hand</span>
-            <div className="flex gap-1 mt-0.5">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={`hand-dart-${i}`}
-                  className={`text-sm ${
-                    i < dartsInHand ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-zinc-700'
-                  }`}
-                >
-                  🎯
-                </span>
-              ))}
+        {/* Darts in hand indicator & End Turn Button */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-4 bg-zinc-950/80 px-4 py-2 rounded-xl border border-zinc-800/80">
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] uppercase font-bold text-zinc-400">Darts in Hand</span>
+              <div className="flex gap-1 mt-0.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={`hand-dart-${i}`}
+                    className={`text-sm ${
+                      i < dartsInHand ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-zinc-700'
+                    }`}
+                  >
+                    🎯
+                  </span>
+                ))}
+              </div>
             </div>
+
+            {match.rules.type === 'x01' && (
+              <div className="pl-4 border-l border-zinc-800 flex flex-col items-end">
+                <span className="text-[10px] uppercase font-bold text-zinc-400">Score Remaining</span>
+                <span className="text-2xl font-mono font-black text-amber-400 leading-none">
+                  {activeScore}
+                </span>
+              </div>
+            )}
           </div>
 
-          {match.rules.type === 'x01' && (
-            <div className="pl-4 border-l border-zinc-800 flex flex-col items-end">
-              <span className="text-[10px] uppercase font-bold text-zinc-400">Score Remaining</span>
-              <span className="text-2xl font-mono font-black text-amber-400 leading-none">
-                {activeScore}
-              </span>
-            </div>
+          {onEndTurn && (
+            <button
+              id="scoreboard-end-turn-btn"
+              onClick={onEndTurn}
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border border-amber-500/40 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 shadow-sm"
+              title="End this player's turn and advance to the next player"
+            >
+              <SkipForward className="w-4 h-4 fill-current" />
+              <span>End Turn</span>
+            </button>
           )}
         </div>
       </div>

@@ -67,6 +67,7 @@ export function createNewMatch(
     cricketState[p.id] = {
       marks: { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 },
       score: 0,
+      points: 0,
     };
 
     aroundClockState[p.id] = {
@@ -286,7 +287,8 @@ export function applyDartToState(
       playerCrick.marks[seg] = Math.min(3, newMarks);
 
       // Check if opponents have NOT closed this number, then score points
-      if (newMarks > 3 && rules.config.includePoints) {
+      const pointsEnabled = rules.config.includePoints !== undefined ? rules.config.includePoints : rules.config.pointsAllowed;
+      if (newMarks > 3 && pointsEnabled) {
         const excess = currentMarks >= 3 ? mult : newMarks - 3;
         const allOpponentsClosed = state.match.players
           .filter((p) => (isTeamMatch ? p.teamId !== activePlayer.teamId : p.id !== activePlayer.id))
@@ -294,9 +296,12 @@ export function applyDartToState(
 
         if (!allOpponentsClosed) {
           playerCrick.score += seg * excess;
+          playerCrick.points = playerCrick.score;
         }
       }
     }
+
+    playerCrick.points = playerCrick.score;
 
     // Sync cricket state across teammates if team match
     if (isTeamMatch && activePlayer.teamId) {
@@ -606,6 +611,7 @@ export function applyDartToState(
           matchCompleted: true,
           isBust,
           isWinDart,
+          isCheckout: isWinDart,
         };
       } else {
         // Start Next Leg
@@ -641,6 +647,7 @@ export function applyDartToState(
           matchCompleted: false,
           isBust,
           isWinDart,
+          isCheckout: isWinDart,
         };
       }
     }
@@ -815,32 +822,72 @@ export function applyTotalScoreToState(
 
     const isMatchOver = currentLegsWon >= rules.config.legsToWin;
 
-    const nextState: GameState = {
-      ...state,
-      remainingScores: newScores,
-      match: {
-        ...state.match,
-        legs: [...state.match.legs.slice(0, -1), updatedLeg],
-        scores: matchScores,
-        teamScores: newTeamScores,
-        winnerPlayerId: isMatchOver ? activePlayer.id : undefined,
-        winnerTeamId: isMatchOver ? activePlayer.teamId : undefined,
-        status: isMatchOver ? 'completed' : 'in_progress',
-        endTime: isMatchOver ? Date.now() : undefined,
-      },
-      currentLeg: updatedLeg,
-      isMatchOver,
-      winnerPlayerId: isMatchOver ? activePlayer.id : undefined,
-      winnerTeamId: isMatchOver ? activePlayer.teamId : undefined,
-      currentTurnDarts: [],
-    };
+    if (isMatchOver) {
+      const nextState: GameState = {
+        ...state,
+        remainingScores: newScores,
+        match: {
+          ...state.match,
+          legs: [...state.match.legs.slice(0, -1), updatedLeg],
+          scores: matchScores,
+          teamScores: newTeamScores,
+          winnerPlayerId: activePlayer.id,
+          winnerTeamId: activePlayer.teamId,
+          status: 'completed',
+          endTime: Date.now(),
+        },
+        currentLeg: updatedLeg,
+        isMatchOver: true,
+        winnerPlayerId: activePlayer.id,
+        winnerTeamId: activePlayer.teamId,
+        currentTurnDarts: [],
+      };
 
-    return {
-      nextState,
-      legCompleted: true,
-      matchCompleted: isMatchOver,
-      isBust: false,
-    };
+      return {
+        nextState,
+        legCompleted: true,
+        matchCompleted: true,
+        isBust: false,
+      };
+    } else {
+      // Start Next Leg
+      const nextLegStarter = (state.legStarterIndex + 1) % state.match.players.length;
+      const newLeg: LegRecord = {
+        legNumber: state.currentLeg.legNumber + 1,
+        setNumber: state.currentLeg.setNumber,
+        startingScore: rules.type === 'x01' ? rules.config.startingScore : 0,
+        turns: [],
+        startTime: Date.now(),
+      };
+
+      const resetScores: Record<string, number> = {};
+      state.match.players.forEach((p) => {
+        resetScores[p.id] = rules.type === 'x01' ? rules.config.startingScore : 0;
+      });
+
+      const nextState: GameState = {
+        ...state,
+        remainingScores: resetScores,
+        match: {
+          ...state.match,
+          legs: [...state.match.legs.slice(0, -1), updatedLeg, newLeg],
+          scores: matchScores,
+          teamScores: newTeamScores,
+        },
+        currentLeg: newLeg,
+        activePlayerIndex: nextLegStarter,
+        legStarterIndex: nextLegStarter,
+        currentTurnDarts: [],
+        isMatchOver: false,
+      };
+
+      return {
+        nextState,
+        legCompleted: true,
+        matchCompleted: false,
+        isBust: false,
+      };
+    }
   }
 
   const nextPlayerIndex = (state.activePlayerIndex + 1) % state.match.players.length;
@@ -861,5 +908,108 @@ export function applyTotalScoreToState(
     legCompleted: false,
     matchCompleted: false,
     isBust,
+  };
+}
+
+/**
+ * Manually ends the active player's turn (e.g. via "End Turn" button or voice command)
+ * Finalizes current turn darts, records turn log, and cleanly rotates activePlayerIndex to next player.
+ */
+export function endCurrentTurn(state: GameState): {
+  nextState: GameState;
+  turnCompleted: boolean;
+  legCompleted: boolean;
+  matchCompleted: boolean;
+  isBust: boolean;
+  turnScore: number;
+} {
+  if (state.isMatchOver) {
+    return {
+      nextState: state,
+      turnCompleted: false,
+      legCompleted: false,
+      matchCompleted: true,
+      isBust: false,
+      turnScore: 0,
+    };
+  }
+
+  const activePlayer = state.match.players[state.activePlayerIndex];
+  const darts = state.currentTurnDarts;
+  const rules = state.match.rules;
+
+  // Recorded darts in this turn: if 0 darts thrown, create a pass/no-score dart
+  const recordedDarts: DartThrow[] = darts.length > 0
+    ? [...darts]
+    : [
+        {
+          segment: 0,
+          multiplier: 0,
+          score: 0,
+          label: 'PASS',
+          isBust: false,
+          timestamp: Date.now(),
+        },
+      ];
+
+  const isBust = darts.some((d) => d.isBust);
+  const turnTotal = isBust ? 0 : darts.reduce((acc, d) => acc + d.score, 0);
+
+  // In X01, remaining score has already been updated per dart in applyDartToState
+  const currentRemaining = state.remainingScores[activePlayer.id] ?? 0;
+  const scoreBefore = rules.type === 'x01'
+    ? currentRemaining + (isBust ? 0 : turnTotal)
+    : 0;
+  const scoreAfter = currentRemaining;
+
+  const turnRecord: TurnRecord = {
+    id: 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    legNumber: state.currentLeg.legNumber,
+    setNumber: state.currentLeg.setNumber,
+    playerId: activePlayer.id,
+    darts: recordedDarts,
+    turnTotal,
+    isBust,
+    scoreBefore,
+    scoreAfter,
+    createdAt: Date.now(),
+  };
+
+  const updatedLeg: LegRecord = {
+    ...state.currentLeg,
+    turns: [...state.currentLeg.turns, turnRecord],
+  };
+
+  // Next player calculation (skipping eliminated players in killer mode)
+  let nextPlayerIndex = (state.activePlayerIndex + 1) % state.match.players.length;
+  if (rules.type === 'killer') {
+    let attempts = 0;
+    while (
+      state.killerState[state.match.players[nextPlayerIndex].id]?.eliminated &&
+      attempts < state.match.players.length
+    ) {
+      nextPlayerIndex = (nextPlayerIndex + 1) % state.match.players.length;
+      attempts++;
+    }
+  }
+
+  const nextState: GameState = {
+    ...state,
+    match: {
+      ...state.match,
+      legs: [...state.match.legs.slice(0, -1), updatedLeg],
+    },
+    currentLeg: updatedLeg,
+    activePlayerIndex: nextPlayerIndex,
+    currentTurnDarts: [],
+  };
+
+  return {
+    nextState,
+    turnCompleted: true,
+    legCompleted: false,
+    matchCompleted: false,
+    isBust,
+    turnScore: turnTotal,
   };
 }

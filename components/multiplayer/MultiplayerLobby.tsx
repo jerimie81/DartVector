@@ -12,7 +12,16 @@ interface MultiplayerLobbyProps {
 
 export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlineMatch }) => {
   const [roomCode, setRoomCode] = useState<string>('');
-  const [inputCode, setInputCode] = useState<string>('');
+  const [inputCode, setInputCode] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam && roomParam.length === 6) {
+        return roomParam;
+      }
+    }
+    return '';
+  });
   const [playerName, setPlayerName] = useState<string>('Player 1');
   const [isInRoom, setIsInRoom] = useState<boolean>(false);
   const [isHost, setIsHost] = useState<boolean>(false);
@@ -24,22 +33,13 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
   const [syncStatus, setSyncStatus] = useState<'idle' | 'connecting' | 'connected'>('idle');
   const channelRef = useRef<BroadcastChannel | null>(null);
 
-  // Auto-detect ?room= URL parameter if shared
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const roomParam = params.get('room');
-      if (roomParam && roomParam.length === 6) {
-        setInputCode(roomParam);
-      }
-    }
-  }, []);
-
   // Real-time Firestore room listener + BroadcastChannel fallback
   useEffect(() => {
     if (!roomCode || !isInRoom) return;
 
-    setSyncStatus('connecting');
+    queueMicrotask(() => {
+      setSyncStatus('connecting');
+    });
 
     // 1. Firestore Cloud onSnapshot listener
     let unsubFirestore: (() => void) | null = null;

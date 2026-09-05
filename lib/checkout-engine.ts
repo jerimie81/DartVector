@@ -4,7 +4,9 @@
 export interface CheckoutSuggestion {
   score: number;
   dartsInHand: number;
+  totalDarts?: number;
   route: string[]; // e.g. ["T20", "T20", "D20"]
+  path: Array<{ label: string; segment?: number; multiplier?: number }>;
   preferredTarget: string; // the next dart to throw: e.g. "T20"
   description: string;
   isBogey: boolean;
@@ -180,42 +182,45 @@ export const THREE_DART_CHECKOUTS: Record<number, string[]> = {
   2: ['D1'],
 };
 
+function buildSuggestion(
+  score: number,
+  dartsInHand: number,
+  route: string[],
+  description: string,
+  isBogey: boolean = false
+): CheckoutSuggestion {
+  return {
+    score,
+    dartsInHand,
+    totalDarts: route.length,
+    route,
+    path: route.map((label) => ({ label })),
+    preferredTarget: route[0],
+    description,
+    isBogey,
+  };
+}
+
 // Calculate exact checkout route based on score and darts remaining in hand (1, 2, or 3)
-export function getCheckoutSuggestion(score: number, dartsRemaining: number = 3): CheckoutSuggestion | null {
+export function getCheckoutSuggestion(
+  score: number,
+  dartsRemaining: number = 3,
+  allowBogey: boolean = false
+): CheckoutSuggestion | null {
   if (score <= 1 || score > 170) return null;
   if (BOGEY_SCORES.has(score)) {
-    return {
-      score,
-      dartsInHand: dartsRemaining,
-      route: ['T20', 'T20', 'D16'], // setup route
-      preferredTarget: 'T20',
-      description: 'Bogey Score (Setup dart needed)',
-      isBogey: true,
-    };
+    if (!allowBogey) return null;
+    return buildSuggestion(score, dartsRemaining, ['T20', 'T20', 'D16'], 'Bogey Score (Setup dart needed)', true);
   }
 
   // If 1 dart in hand, can only checkout if score is an even double <= 40 or 50 (Bull)
   if (dartsRemaining === 1) {
     if (score === 50) {
-      return {
-        score,
-        dartsInHand: 1,
-        route: ['D-BULL'],
-        preferredTarget: 'D-BULL',
-        description: 'Bullseye for the match',
-        isBogey: false,
-      };
+      return buildSuggestion(score, 1, ['D-BULL'], 'Bullseye for the match');
     }
     if (score % 2 === 0 && score <= 40) {
       const doubleNum = score / 2;
-      return {
-        score,
-        dartsInHand: 1,
-        route: [`D${doubleNum}`],
-        preferredTarget: `D${doubleNum}`,
-        description: `Double ${doubleNum}`,
-        isBogey: false,
-      };
+      return buildSuggestion(score, 1, [`D${doubleNum}`], `Double ${doubleNum}`);
     }
     return null; // cannot checkout in 1 dart
   }
@@ -225,14 +230,7 @@ export function getCheckoutSuggestion(score: number, dartsRemaining: number = 3)
     if (score > 110 && score !== 120 && score !== 104) {
       // 104 = T18 D25 or T20 D22 is not standard, 110 = T20 D25
       if (score === 110) {
-        return {
-          score,
-          dartsInHand: 2,
-          route: ['T20', 'D-BULL'],
-          preferredTarget: 'T20',
-          description: 'Treble 20 then Bullseye',
-          isBogey: false,
-        };
+        return buildSuggestion(score, 2, ['T20', 'D-BULL'], 'Treble 20 then Bullseye');
       }
       return null;
     }
@@ -240,87 +238,38 @@ export function getCheckoutSuggestion(score: number, dartsRemaining: number = 3)
     // 2-dart checkouts
     // Direct double
     if (score % 2 === 0 && score <= 40) {
-      return {
-        score,
-        dartsInHand: 2,
-        route: [`D${score / 2}`],
-        preferredTarget: `D${score / 2}`,
-        description: `Double ${score / 2}`,
-        isBogey: false,
-      };
+      return buildSuggestion(score, 2, [`D${score / 2}`], `Double ${score / 2}`);
     }
     if (score === 50) {
-      return {
-        score,
-        dartsInHand: 2,
-        route: ['D-BULL'],
-        preferredTarget: 'D-BULL',
-        description: 'Bullseye',
-        isBogey: false,
-      };
+      return buildSuggestion(score, 2, ['D-BULL'], 'Bullseye');
     }
 
     // Check Single + Double for scores <= 60
     if (score <= 60) {
       if (score <= 40 && score % 2 === 0) {
-        return {
-          score,
-          dartsInHand: 2,
-          route: [`D${score / 2}`],
-          preferredTarget: `D${score / 2}`,
-          description: `Double ${score / 2}`,
-          isBogey: false,
-        };
+        return buildSuggestion(score, 2, [`D${score / 2}`], `Double ${score / 2}`);
       }
       // e.g. 52 -> 12, D20 or 20, D16
       if (score >= 41) {
         const single = score - 40; // leave D20
         if (single >= 1 && single <= 20) {
-          return {
-            score,
-            dartsInHand: 2,
-            route: [`${single}`, 'D20'],
-            preferredTarget: `${single}`,
-            description: `Single ${single}, Double 20`,
-            isBogey: false,
-          };
+          return buildSuggestion(score, 2, [`${single}`, 'D20'], `Single ${single}, Double 20`);
         }
       }
       // If odd <= 39 -> single then double
       const single = score % 2 === 1 ? 1 : 2;
       const targetDouble = (score - single) / 2;
-      return {
-        score,
-        dartsInHand: 2,
-        route: [`${single}`, `D${targetDouble}`],
-        preferredTarget: `${single}`,
-        description: `Single ${single}, Double ${targetDouble}`,
-        isBogey: false,
-      };
+      return buildSuggestion(score, 2, [`${single}`, `D${targetDouble}`], `Single ${single}, Double ${targetDouble}`);
     }
 
     // Scores 61 to 100 with 2 darts
     for (let treble = 20; treble >= 10; treble--) {
       const rem = score - treble * 3;
       if (rem > 0 && rem <= 40 && rem % 2 === 0) {
-        return {
-          score,
-          dartsInHand: 2,
-          route: [`T${treble}`, `D${rem / 2}`],
-          preferredTarget: `T${treble}`,
-          description: `Treble ${treble}, Double ${rem / 2}`,
-          isBogey: false,
-        };
+        return buildSuggestion(score, 2, [`T${treble}`, `D${rem / 2}`], `Treble ${treble}, Double ${rem / 2}`);
       }
       if (rem === 50) {
-        return {
-          score,
-          dartsInHand: 2,
-          route: [`T${treble}`, 'D-BULL'],
-          preferredTarget: `T${treble}`,
-          description: `Treble ${treble}, Bullseye`,
-          isBogey: false,
-        };
+        return buildSuggestion(score, 2, [`T${treble}`, 'D-BULL'], `Treble ${treble}, Bullseye`);
       }
     }
   }
@@ -328,14 +277,7 @@ export function getCheckoutSuggestion(score: number, dartsRemaining: number = 3)
   // 3 Darts in hand: use lookup table
   const defaultRoute = THREE_DART_CHECKOUTS[score];
   if (defaultRoute && defaultRoute.length > 0) {
-    return {
-      score,
-      dartsInHand: 3,
-      route: defaultRoute,
-      preferredTarget: defaultRoute[0],
-      description: defaultRoute.join(' → '),
-      isBogey: false,
-    };
+    return buildSuggestion(score, 3, defaultRoute, defaultRoute.join(' → '));
   }
 
   return null;

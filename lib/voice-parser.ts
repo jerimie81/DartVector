@@ -5,7 +5,7 @@
 import { DartThrow } from './types';
 
 export interface VoiceParseResult {
-  type: 'score' | 'undo' | 'bust' | 'unknown' | 'dart_sequence';
+  type: 'score' | 'undo' | 'bust' | 'unknown' | 'dart_sequence' | 'end_turn';
   score?: number;
   darts?: DartThrow[];
   label?: string;
@@ -50,15 +50,15 @@ export function parseSingleDartPhrase(phrase: string): DartThrow | null {
   if (!clean) return null;
 
   if (clean === 'miss' || clean === 'zero' || clean === 'nil' || clean === 'outside' || clean === '0') {
-    return { segment: 0, multiplier: 0, score: 0, isBust: false };
+    return { segment: 0, multiplier: 0, score: 0, label: 'MISS', isBust: false };
   }
 
   if (clean === 'bullseye' || clean === 'double bull' || clean === 'inner bull' || clean === 'd50' || clean === '50') {
-    return { segment: 50, multiplier: 2, score: 50, isBust: false };
+    return { segment: 50, multiplier: 2, score: 50, label: 'D-BULL', isBust: false };
   }
 
   if (clean === 'bull' || clean === 'outer bull' || clean === 'single bull' || clean === '25') {
-    return { segment: 25, multiplier: 1, score: 25, isBust: false };
+    return { segment: 25, multiplier: 1, score: 25, label: 'BULL', isBust: false };
   }
 
   // Check treble/triple prefixes: "treble 20", "triple twenty", "t20"
@@ -67,7 +67,7 @@ export function parseSingleDartPhrase(phrase: string): DartThrow | null {
     const rawVal = trebleMatch[1];
     const seg = parseInt(rawVal, 10) || NUMBER_WORDS[rawVal];
     if (seg && seg >= 1 && seg <= 20) {
-      return { segment: seg, multiplier: 3, score: seg * 3, isBust: false };
+      return { segment: seg, multiplier: 3, score: seg * 3, label: `T${seg}`, isBust: false };
     }
   }
 
@@ -77,10 +77,10 @@ export function parseSingleDartPhrase(phrase: string): DartThrow | null {
     const rawVal = doubleMatch[1];
     const seg = parseInt(rawVal, 10) || NUMBER_WORDS[rawVal];
     if (seg && seg >= 1 && seg <= 20) {
-      return { segment: seg, multiplier: 2, score: seg * 2, isBust: false };
+      return { segment: seg, multiplier: 2, score: seg * 2, label: `D${seg}`, isBust: false };
     }
     if (seg === 25 || seg === 50) {
-      return { segment: 50, multiplier: 2, score: 50, isBust: false };
+      return { segment: 50, multiplier: 2, score: 50, label: 'D-BULL', isBust: false };
     }
   }
 
@@ -90,19 +90,19 @@ export function parseSingleDartPhrase(phrase: string): DartThrow | null {
     const rawVal = singleMatch[1];
     const seg = parseInt(rawVal, 10) || NUMBER_WORDS[rawVal];
     if (seg && seg >= 1 && seg <= 20) {
-      return { segment: seg, multiplier: 1, score: seg, isBust: false };
+      return { segment: seg, multiplier: 1, score: seg, label: `S${seg}`, isBust: false };
     }
   }
 
   // Check direct numbers 1-20
   const numDirect = parseInt(clean, 10);
   if (!isNaN(numDirect) && numDirect >= 1 && numDirect <= 20) {
-    return { segment: numDirect, multiplier: 1, score: numDirect, isBust: false };
+    return { segment: numDirect, multiplier: 1, score: numDirect, label: `S${numDirect}`, isBust: false };
   }
 
   if (NUMBER_WORDS[clean] !== undefined && NUMBER_WORDS[clean] >= 1 && NUMBER_WORDS[clean] <= 20) {
     const seg = NUMBER_WORDS[clean];
-    return { segment: seg, multiplier: 1, score: seg, isBust: false };
+    return { segment: seg, multiplier: 1, score: seg, label: `S${seg}`, isBust: false };
   }
 
   return null;
@@ -191,7 +191,26 @@ export function parseVoiceDartsCommand(rawTranscript: string): VoiceParseResult 
     };
   }
 
-  // 2. Bust / Miss / Zero Commands
+  // 2. End Turn / Next Player / Pass Commands
+  if (
+    transcript === 'end turn' ||
+    transcript.includes('end turn') ||
+    transcript === 'next player' ||
+    transcript.includes('next player') ||
+    transcript === 'pass' ||
+    transcript.includes('pass turn') ||
+    transcript === 'turn over' ||
+    transcript === 'done' ||
+    transcript === 'next'
+  ) {
+    return {
+      type: 'end_turn',
+      label: 'End Turn (Pass to Next Player)',
+      originalTranscript: rawTranscript,
+    };
+  }
+
+  // 3. Bust / Miss / Zero Commands
   if (
     transcript.includes('bust') ||
     transcript.includes('busted') ||
