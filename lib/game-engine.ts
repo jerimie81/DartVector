@@ -206,6 +206,7 @@ export function applyDartToState(
   matchCompleted: boolean;
   isBust: boolean;
   isWinDart: boolean;
+  isCheckout?: boolean;
 } {
   const activePlayer = state.match.players[state.activePlayerIndex];
   const stampedDart: DartThrow = {
