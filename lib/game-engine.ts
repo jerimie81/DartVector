@@ -287,7 +287,7 @@ export function applyDartToState(
       playerCrick.marks[seg] = Math.min(3, newMarks);
 
       // Check if opponents have NOT closed this number, then score points
-      const pointsEnabled = rules.config.includePoints !== undefined ? rules.config.includePoints : rules.config.pointsAllowed;
+      const pointsEnabled = rules.config.includePoints !== undefined ? rules.config.includePoints : (rules.config as any).pointsAllowed;
       if (newMarks > 3 && pointsEnabled) {
         const excess = currentMarks >= 3 ? mult : newMarks - 3;
         const allOpponentsClosed = state.match.players
