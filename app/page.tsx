@@ -98,6 +98,7 @@ export default function DartVectorApp() {
   const [isLeagueNightOpen, setIsLeagueNightOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isBotThinking, setIsBotThinking] = useState(false);
+  const [isDartBotEnabled, setIsDartBotEnabled] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showCoach, setShowCoach] = useState(false);
 
@@ -133,7 +134,7 @@ export default function DartVectorApp() {
 
   // Handle DartBot Turn Automation
   useEffect(() => {
-    if (gameState.isMatchOver || isBotThinking) return;
+    if (gameState.isMatchOver || isBotThinking || !isDartBotEnabled) return;
 
     const activePlayer = gameState.match.players[gameState.activePlayerIndex];
     if (activePlayer && activePlayer.isBot && activePlayer.botLevel) {
@@ -209,7 +210,7 @@ export default function DartVectorApp() {
         if (timer) clearTimeout(timer);
       };
     }
-  }, [gameState.activePlayerIndex, gameState.currentTurnDarts.length, gameState.isMatchOver, isBotThinking, gameState.match.players]);
+  }, [gameState.activePlayerIndex, gameState.currentTurnDarts.length, gameState.isMatchOver, isBotThinking, gameState.match.players, isDartBotEnabled]);
 
   // Throw 1 Dart Handler (from SVG Board or Dart Selector)
   const handleThrowDart = useCallback((dart: DartThrow) => {
@@ -526,6 +527,19 @@ export default function DartVectorApp() {
                           <span>DartBot Aiming...</span>
                         </span>
                       )}
+                      <button
+                        id="toggle-dartbot-btn"
+                        onClick={() => setIsDartBotEnabled(!isDartBotEnabled)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                          isDartBotEnabled
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                            : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-white hover:bg-zinc-700'
+                        }`}
+                        title={isDartBotEnabled ? "DartBot is Active" : "DartBot is Paused"}
+                      >
+                        <Bot className="w-3 h-3" />
+                        {isDartBotEnabled ? 'Bot ON' : 'Bot OFF'}
+                      </button>
                     </div>
 
                     <div className="flex items-center gap-2">
