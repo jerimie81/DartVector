@@ -69,8 +69,8 @@ Deploy DartVector to the cloud in under 2 minutes so anyone can access it via a 
 Running and testing DartVector locally on your own machine is straightforward:
 
 ### Prerequisites
-- **Node.js**: v18.17.0 or v20+
-- **npm**: v9+ (or `pnpm` / `yarn`)
+- **Node.js**: v22.12.0 (recommended) or newer 22.x
+- **npm**: v10+ (or `pnpm` / `yarn`)
 
 ### Quick Start Commands
 

@@ -35,7 +35,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
 
   // Real-time Firestore room listener + BroadcastChannel fallback
   useEffect(() => {
-    if (!roomCode || !isInRoom) return;
+    if (!db || !roomCode || !isInRoom) return;
 
     queueMicrotask(() => {
       setSyncStatus('connecting');
@@ -127,6 +127,11 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
   }, [roomCode, isInRoom, onStartOnlineMatch]);
 
   const handleCreateRoom = async () => {
+    if (!db) {
+      alert('Online multiplayer is unavailable because Firebase is not configured.');
+      return;
+    }
+
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setRoomCode(code);
     setIsHost(true);
@@ -163,6 +168,11 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
   };
 
   const handleJoinRoom = async () => {
+    if (!db) {
+      alert('Online multiplayer is unavailable because Firebase is not configured.');
+      return;
+    }
+
     if (inputCode.length !== 6) {
       alert('Please enter a valid 6-digit match code.');
       return;
@@ -233,6 +243,21 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
     e.preventDefault();
     if (!chatInput.trim()) return;
 
+    if (!db) {
+      if (channelRef.current) {
+        channelRef.current.postMessage({
+          type: 'CHAT_MSG',
+          code: roomCode,
+          payload: {
+            sender: playerName.trim() || 'Player',
+            text: chatInput.trim(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        });
+      }
+      return;
+    }
+
     const msg = {
       sender: playerName.trim() || 'Player',
       text: chatInput.trim(),
@@ -283,6 +308,11 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ onStartOnlin
       isBot: false,
       createdAt: new Date().toISOString(),
     }));
+
+    if (!db) {
+      onStartOnlineMatch('x01', rules, formattedPlayers);
+      return;
+    }
 
     try {
       const roomRef = doc(db, 'rooms', roomCode);

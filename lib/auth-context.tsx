@@ -68,6 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   const loadUserStats = useCallback(async (uid: string) => {
+    if (!db) return;
+
     try {
       const userRef = doc(db, 'users', uid);
       const userSnap = await getDoc(userRef);
@@ -81,6 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync user's cloud matches into local IndexedDB for lightning fast offline/online hybrid access
   const syncCloudHistory = useCallback(async (currentUser?: User | null) => {
+    if (!db) return;
+
     const targetUser = currentUser || user;
     if (!targetUser) return;
 
@@ -121,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Upload local matches to Firebase Firestore
   const syncLocalToCloud = useCallback(async (): Promise<{ uploadedMatches: number }> => {
-    if (!user) return { uploadedMatches: 0 };
+    if (!db || !user) return { uploadedMatches: 0 };
 
     try {
       setIsSyncing(true);
@@ -205,6 +209,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, loadUserStats]);
 
   const handleUserLogin = useCallback(async (currentUser: User) => {
+    if (!db) return;
+
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const userSnap = await getDoc(userRef);
@@ -253,12 +259,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [syncCloudHistory, syncLocalToCloud]);
 
   useEffect(() => {
+    if (!auth || !db) {
+      setUser(null);
+      setUserStats(null);
+      setLoading(false);
+      return;
+    }
+
     // Check for redirect sign-in result on page load
     if (typeof window !== 'undefined') {
       getRedirectResult(auth)
         .then((result) => {
           if (result && result.user) {
-            handleUserLogin(result.user);
           }
         })
         .catch((error) => {
@@ -280,6 +292,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [handleUserLogin]);
 
   const signInWithGoogle = async () => {
+    if (!auth || !googleProvider) {
+      alert('Google Sign-In is unavailable because Firebase is not configured.');
+      return;
+    }
+
     try {
       const isStandalone =
         typeof window !== 'undefined' &&
@@ -310,6 +327,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (!auth) return;
+
     try {
       await firebaseSignOut(auth);
       setUser(null);

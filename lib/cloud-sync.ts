@@ -4,6 +4,8 @@ import { auth, db } from './firebase';
 import { MatchRecord, PlayerProfile } from './types';
 
 export async function syncMatchToCloud(match: MatchRecord): Promise<boolean> {
+  if (!db || !auth) return false;
+
   const currentUser = auth.currentUser;
   if (!currentUser) return false;
 
@@ -38,6 +40,8 @@ export async function syncMatchToCloud(match: MatchRecord): Promise<boolean> {
 }
 
 export async function deleteMatchFromCloud(matchId: string): Promise<boolean> {
+  if (!db || !auth) return false;
+
   const currentUser = auth.currentUser;
   if (!currentUser) return false;
 
@@ -52,6 +56,8 @@ export async function deleteMatchFromCloud(matchId: string): Promise<boolean> {
 }
 
 export async function syncPlayerToCloud(player: PlayerProfile): Promise<boolean> {
+  if (!db || !auth) return false;
+
   const currentUser = auth.currentUser;
   if (!currentUser) return false;
 
@@ -80,6 +86,8 @@ export async function syncPlayerToCloud(player: PlayerProfile): Promise<boolean>
 }
 
 export async function syncLeagueToCloud(league: any): Promise<boolean> {
+  if (!db || !auth) return false;
+
   const currentUser = auth.currentUser;
   if (!currentUser) return false;
 
@@ -107,6 +115,8 @@ export async function syncLeagueToCloud(league: any): Promise<boolean> {
 }
 
 export async function deleteLeagueFromCloud(leagueId: string): Promise<boolean> {
+  if (!db || !auth) return false;
+
   const currentUser = auth.currentUser;
   if (!currentUser) return false;
 
