@@ -268,26 +268,26 @@ export const ThrowLogPanel: React.FC<ThrowLogPanelProps> = ({ gameState, classNa
   return (
     <div
       id="throw-by-throw-log-panel"
-      className={`w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-2xl flex flex-col gap-4 ${className}`}
+      className={`w-full max-w-full overflow-hidden bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xl flex flex-col gap-4 ${className}`}
     >
       {/* PANEL HEADER */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3.5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm">
-            <History className="w-5 h-5 stroke-[2.5]" />
+      <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 border-b border-zinc-800 pb-3 sm:pb-3.5 min-w-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm shrink-0">
+            <History className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-black text-white tracking-wide uppercase">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xs sm:text-sm font-black text-white tracking-wide uppercase truncate">
                 Throw-by-Throw Log
               </h2>
-              <span className="text-[10px] font-black uppercase bg-zinc-800 text-amber-400 px-2 py-0.5 rounded-full border border-zinc-700">
+              <span className="text-[9px] sm:text-[10px] font-black uppercase bg-zinc-800 text-amber-400 px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">
                 Last {last10Throws.length} / {totalThrowsCount} Darts
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400 flex items-center gap-1">
-              <Clock className="w-3 h-3 text-zinc-500" />
-              <span>Chronological sequence with timestamps & segment values</span>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400 flex items-center gap-1 truncate">
+              <Clock className="w-3 h-3 text-zinc-500 shrink-0" />
+              <span className="truncate">Chronological sequence with timestamps & segment values</span>
             </p>
           </div>
         </div>

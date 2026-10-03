@@ -67,11 +67,11 @@ export const MatchWinModal: React.FC<MatchWinModalProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="w-full max-w-2xl bg-zinc-900 border-2 border-amber-500 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(245,158,11,0.25)] flex flex-col gap-6 text-center my-auto"
+        className="w-full max-w-2xl max-h-[94vh] overflow-y-auto bg-zinc-900 border-2 border-amber-500 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_0_50px_rgba(245,158,11,0.25)] flex flex-col gap-4 sm:gap-6 text-center my-auto overscroll-contain"
       >
         {/* Trophy Icon */}
         <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-500 to-amber-300 text-zinc-950 flex items-center justify-center shadow-xl shadow-amber-500/30">

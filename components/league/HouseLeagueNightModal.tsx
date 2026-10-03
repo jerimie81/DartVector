@@ -120,29 +120,29 @@ export const HouseLeagueNightModal: React.FC<HouseLeagueNightModalProps> = ({
   })).sort((a, b) => b.matchesWon - a.matchesWon || b.winRate - a.winRate || b.avg - a.avg);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-5 overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="w-full max-w-2xl max-h-[94vh] bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col gap-4 sm:gap-5 overflow-hidden my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Trophy className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3 sm:pb-4 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="text-base font-black text-white">Tonight&apos;s House League Standings</h3>
-              <p className="text-xs text-zinc-400">Match results, win rates &amp; bragging rights</p>
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-black text-white truncate">Tonight&apos;s House League Standings</h3>
+              <p className="text-[11px] sm:text-xs text-zinc-400 truncate">Match results, win rates &amp; bragging rights</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition-colors shrink-0 ml-2"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-4 overscroll-contain">
           {loading ? (
             <div className="text-center py-10 text-zinc-500 text-sm">Loading league stats...</div>
           ) : standings.length === 0 ? (

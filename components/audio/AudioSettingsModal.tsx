@@ -87,29 +87,29 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({ isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-xl max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col gap-5 overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="w-full max-w-xl max-h-[94vh] bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col gap-4 sm:gap-5 overflow-hidden my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-3.5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Sliders className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Sliders className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="text-base font-black text-white">Audio & Sound FX Settings</h3>
-              <p className="text-xs text-zinc-400">Impact sound packs, referee announcer & volume levels</p>
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-black text-white truncate">Audio & Sound FX Settings</h3>
+              <p className="text-[11px] sm:text-xs text-zinc-400 truncate">Impact sound packs, referee announcer & volume levels</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors"
+            className="p-1.5 sm:p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors shrink-0 ml-2"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto pr-1 space-y-5">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-4 sm:space-y-5 overscroll-contain">
           {/* SECTION 1: DART IMPACT SOUND PACKS */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">

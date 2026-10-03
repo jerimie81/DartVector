@@ -19,18 +19,18 @@ export const UserAuthButton: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-zinc-900/80 border border-zinc-800 text-[11px] font-semibold text-zinc-400">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-zinc-900/80 border border-zinc-800 text-[11px] font-semibold text-zinc-400 shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>Guest Play</span>
         </div>
         <button
           id="google-sign-in-btn"
           onClick={signInWithGoogle}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 text-xs font-black transition-all shadow-md active:scale-95 group"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 text-xs font-black transition-all shadow-md active:scale-95 group shrink-0"
           title="Play as Guest or optionally Sign In with Google for Cloud Backup"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
             <path
               fill="currentColor"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -48,8 +48,8 @@ export const UserAuthButton: React.FC = () => {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          <span className="hidden sm:inline">Backup with Google</span>
-          <span className="sm:hidden">Sign In</span>
+          <span className="hidden xl:inline">Backup with Google</span>
+          <span className="xl:hidden text-[11px] font-black">Sign In</span>
         </button>
       </div>
     );

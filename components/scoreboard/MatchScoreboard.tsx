@@ -162,7 +162,7 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-6 bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-800">
+          <div className="flex items-center gap-3 sm:gap-6 bg-zinc-900/80 px-3 sm:px-4 py-2 rounded-xl border border-zinc-800 flex-wrap min-w-0">
             {match.players.map((p, idx) => {
               const isCurrent = idx === activePlayerIndex;
               const scoreData = match.scores[p.id] || { legsWon: 0, setsWon: 0 };
@@ -184,7 +184,7 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
         {/* Chalkboard / Big Pub Display Mode Toggle */}
         <button
           onClick={() => setIsChalkboardMode(!isChalkboardMode)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shrink-0 ${
             isChalkboardMode
               ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-md ring-1 ring-amber-400/40 font-black'
               : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white'
@@ -192,13 +192,14 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
           title="Toggle Big Chalkboard Display Mode"
         >
           <span>🍻</span>
-          <span>{isChalkboardMode ? 'Big Chalkboard ON' : 'Chalkboard Mode'}</span>
+          <span className="hidden sm:inline">{isChalkboardMode ? 'Big Chalkboard ON' : 'Chalkboard Mode'}</span>
+          <span className="sm:hidden">{isChalkboardMode ? 'Chalk ON' : 'Chalk'}</span>
         </button>
       </div>
 
       {/* PROMINENT "WHOSE TURN IS IT?" BANNER */}
       <div
-        className={`w-full p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl transition-all ${
+        className={`w-full p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl transition-all ${
           isTeamMatch
             ? isTeam1Active
               ? 'bg-red-950/40 border-red-500/60 text-red-200'
@@ -206,25 +207,25 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
             : 'bg-amber-950/30 border-amber-500/50 text-amber-200'
         }`}
       >
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-950/80 border border-zinc-700/80 flex items-center justify-center text-2xl shadow-inner">
+        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 w-full sm:w-auto">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-zinc-950/80 border border-zinc-700/80 flex items-center justify-center text-xl sm:text-2xl shadow-inner shrink-0">
             {activePlayer.avatar}
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-900 text-amber-400 border border-zinc-700">
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-900 text-amber-400 border border-zinc-700 shrink-0">
                 👉 Current Thrower
               </span>
               {isTeamMatch && (
-                <span className="text-[10px] font-bold text-zinc-400">
+                <span className="text-[10px] font-bold text-zinc-400 truncate">
                   {isTeam1Active ? team1?.name : team2?.name}
                 </span>
               )}
             </div>
-            <div className="text-xl font-black text-white mt-0.5 flex items-center gap-2">
-              <span>{activePlayer.name}</span>
+            <div className="text-lg sm:text-xl font-black text-white mt-0.5 flex items-center gap-2 truncate">
+              <span className="truncate">{activePlayer.name}</span>
               {activePlayer.isBot && (
-                <span className="text-xs px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 font-normal">
+                <span className="text-xs px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 font-normal shrink-0">
                   Bot
                 </span>
               )}
@@ -233,7 +234,7 @@ export const MatchScoreboard: React.FC<MatchScoreboardProps> = ({
         </div>
 
         {/* Darts in hand indicator & End Turn Button */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center gap-4 bg-zinc-950/80 px-4 py-2 rounded-xl border border-zinc-800/80">
             <div className="flex flex-col items-center">
               <span className="text-[10px] uppercase font-bold text-zinc-400">Darts in Hand</span>
