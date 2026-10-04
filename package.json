@@ -9,7 +9,7 @@
     "dev": "next dev -p 3000 -H 0.0.0.0",
     "build": "next build",
     "build:web": "next build",
-    "android:assemble": "npm run build:web && rm -rf android/app/src/main/assets/* && cp -R out/. android/app/src/main/assets/ && ANDROID_HOME=/home/redrum/Android/Sdk /home/redrum/.gradle/wrapper/dists/gradle-8.14.5-bin/690y85m0j9nfaub7xoiayko8a/gradle-8.14.5/bin/gradle -p android assembleDebug && cp android/app/build/outputs/apk/debug/app-debug.apk DartVector.apk",
+    "android:assemble": "npm run build:web && rm -rf ../Dartvector-android/app/src/main/assets/* && cp -R out/. ../Dartvector-android/app/src/main/assets/ && ANDROID_HOME=/home/redrum/Android/Sdk /home/redrum/.gradle/wrapper/dists/gradle-8.14.5-bin/690y85m0j9nfaub7xoiayko8a/gradle-8.14.5/bin/gradle -p ../Dartvector-android assembleDebug && cp ../Dartvector-android/app/build/outputs/apk/debug/app-debug.apk DartVector.apk",
     "build:win": "npm run build && electron-builder --win --x64",
     "start": "next start -p 3000 -H 0.0.0.0",
     "lint": "eslint app components lib tests --max-warnings=0",
