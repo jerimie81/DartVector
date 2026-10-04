@@ -12,6 +12,7 @@ import {
   GameState,
   createNewMatch,
   applyDartToState,
+  applyDartsToState,
   applyTotalScoreToState,
   endCurrentTurn,
 } from '@/lib/game-engine';
@@ -210,6 +211,28 @@ export default function DartVectorApp() {
 
     const activePlayer = gameState.match.players[gameState.activePlayerIndex];
     const result = applyDartToState(gameState, dart);
+
+    if (result.turnCompleted) {
+      const turnScore = result.nextState.currentLeg.turns[result.nextState.currentLeg.turns.length - 1]?.turnTotal || 0;
+      soundEngine.callScore(turnScore, result.isBust);
+
+      if (result.legCompleted && !result.matchCompleted) {
+        soundEngine.callGameShot(false, activePlayer.name);
+      }
+    }
+
+    setGameState(result.nextState);
+  }, [gameState, isBotThinking]);
+
+  // Voice sequences must be resolved from one snapshot. Calling the single-dart
+  // handler repeatedly would reuse its React closure and lose all but one dart.
+  const handleThrowDarts = useCallback((darts: DartThrow[]) => {
+    if (!gameState || gameState.isMatchOver || isBotThinking || darts.length === 0) return;
+
+    historyStackRef.current.push(JSON.parse(JSON.stringify(gameState)));
+
+    const activePlayer = gameState.match.players[gameState.activePlayerIndex];
+    const result = applyDartsToState(gameState, darts);
 
     if (result.turnCompleted) {
       const turnScore = result.nextState.currentLeg.turns[result.nextState.currentLeg.turns.length - 1]?.turnTotal || 0;
@@ -533,6 +556,7 @@ export default function DartVectorApp() {
                   activePlayerScore={activeScore}
                   currentTurnDarts={gameState.currentTurnDarts}
                   onThrowDart={handleThrowDart}
+                  onThrowDarts={handleThrowDarts}
                   onApplyTurnTotal={handleApplyTurnTotal}
                   onEndTurn={handleEndTurn}
                   onUndoDart={handleUndoDart}

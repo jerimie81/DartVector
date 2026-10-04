@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createNewMatch, applyDartToState, endCurrentTurn } from './game-engine';
+import { createNewMatch, applyDartToState, applyDartsToState, endCurrentTurn } from './game-engine';
 import { GameRules, PlayerProfile, DartThrow } from './types';
 import { getCheckoutSuggestion } from './checkout-engine';
 import { coordinatesToDart, getIdealTargetCoords } from './dartboard-geometry';
@@ -171,6 +171,37 @@ describe('Voice Parser', () => {
     expect(seq?.darts[0].segment).toBe(20);
     expect(seq?.darts[1].segment).toBe(20);
     expect(seq?.darts[2].segment).toBe(5);
+
+    const command = parseVoiceDartsCommand('twenty, twenty, five');
+    expect(command.type).toBe('dart_sequence');
+    expect(command.darts).toHaveLength(3);
+  });
+
+  it('applies a voice sequence dart-by-dart and stops at checkout', () => {
+    const players: PlayerProfile[] = [
+      { id: 'voice-p1', name: 'Alice', avatar: '🎯', color: '#f59e0b', isBot: false, createdAt: '' },
+      { id: 'voice-p2', name: 'Bob', avatar: '🏹', color: '#3b82f6', isBot: false, createdAt: '' },
+    ];
+    const rules: GameRules = {
+      type: 'x01',
+      config: {
+        startingScore: 50,
+        inRule: 'straight_in',
+        outRule: 'double_out',
+        legsToWin: 1,
+        setsToWin: 1,
+      },
+    };
+    const state = createNewMatch('x01', rules, players);
+    const result = applyDartsToState(state, [
+      { segment: 20, multiplier: 1, score: 20, label: 'S20' },
+      { segment: 15, multiplier: 2, score: 30, label: 'D15' },
+      { segment: 20, multiplier: 3, score: 60, label: 'T20' },
+    ]);
+
+    expect(result.matchCompleted).toBe(true);
+    expect(result.nextState.currentLeg.turns[0].darts).toHaveLength(2);
+    expect(result.nextState.remainingScores['voice-p1']).toBe(0);
   });
 
   it('parses undo, bust, and end turn commands', () => {
@@ -216,4 +247,3 @@ describe('Turn Management and Player Switching', () => {
     expect(p2EndTurn.nextState.activePlayerIndex).toBe(0);
   });
 });
-

@@ -1,5 +1,15 @@
 # DartVector — TODO
 
+## Current Assignment Handoff — Android APK (2026-10-02)
+
+- [ ] **Produce `DartVector.apk` at the repository root.** The project has already been refactored into a Next.js static export embedded in a native Android WebView.
+  - Android wrapper: `android/`; package/application ID: `com.jerimie81.dartvector`; launch activity: `android/app/src/main/java/com/jerimie81/dartvector/MainActivity.java`.
+  - WebView loads `file:///android_asset/index.html`; `next.config.ts` uses `output: 'export'` with relative asset paths, so do not revert it to server-rendered Next.js behavior.
+  - Build configuration is Kotlin DSL with `compileSdk = 35`, `targetSdk = 35`, and explicitly `buildToolsVersion = "36.0.0"`. The requested SDK tooling is installed at `/home/redrum/Android/Sdk/build-tools/36.0.0`.
+  - Run from the repository root: `npm run android:assemble`. It builds the static export, copies `out/` to `android/app/src/main/assets/`, runs Gradle `assembleDebug` with `ANDROID_HOME=/home/redrum/Android/Sdk`, and copies `android/app/build/outputs/apk/debug/app-debug.apk` to `DartVector.apk`.
+  - The prior agent started that command, but the user intentionally aborted it immediately; no completion status or APK artifact was observed. Re-run it, then verify both output paths exist and inspect the APK with `/home/redrum/Android/Sdk/build-tools/36.0.0/aapt dump badging DartVector.apk` and `/home/redrum/Android/Sdk/build-tools/36.0.0/apksigner verify --verbose DartVector.apk`.
+  - Preserve the existing uncommitted app/refactor changes (`README.md`, `next.config.ts`, `package.json`, `android/`, and related source changes); they predate this handoff.
+
 Prioritized by severity. "Fix" items reference function/component names, not line numbers.
 
 ---
@@ -39,7 +49,7 @@ Prioritized by severity. "Fix" items reference function/component names, not lin
 
 ## P1 — Real Gaps vs. Category
 
-- [ ] **Add a persistent voice-parser mode for dart-by-dart entry**
+- [x] **Add a persistent voice-parser mode for dart-by-dart entry**
   - Extend `parseVoiceDartsCommand` (`lib/voice-parser.ts`) to accept a sequence utterance ("twenty, twenty, five") and split it into three individual `DartThrow`s via the existing segment/multiplier vocabulary, instead of only ever producing one aggregate turn score.
   - Route recognized individual darts through `applyDartToState` (one dart at a time) rather than `applyTotalScoreToState`, so bust/checkout detection stays dart-accurate instead of turn-total-accurate.
 

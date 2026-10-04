@@ -11,6 +11,7 @@ interface InputPadProps {
   activePlayerScore: number;
   currentTurnDarts: DartThrow[];
   onThrowDart: (dart: DartThrow) => void;
+  onThrowDarts: (darts: DartThrow[]) => void;
   onApplyTurnTotal: (score: number) => void;
   onEndTurn: () => void;
   onUndoDart: () => void;
@@ -27,6 +28,7 @@ export const InputPad: React.FC<InputPadProps> = ({
   activePlayerScore,
   currentTurnDarts,
   onThrowDart,
+  onThrowDarts,
   onApplyTurnTotal,
   onEndTurn,
   onUndoDart,
@@ -65,9 +67,7 @@ export const InputPad: React.FC<InputPadProps> = ({
     }
 
     if (result.type === 'dart_sequence' && result.darts && result.darts.length > 0) {
-      result.darts.forEach((dart) => {
-        onThrowDart(dart);
-      });
+      onThrowDarts(result.darts);
       setVoiceFeedback(`🎯 Voice Sequence: ${result.label}`);
       return;
     }
@@ -85,7 +85,7 @@ export const InputPad: React.FC<InputPadProps> = ({
     }
 
     setVoiceFeedback(`❓ Could not parse "${transcript}". Try saying "140", "Ton 80", "End turn", or "Bust"`);
-  }, [onApplyTurnTotal, onEndTurn, onUndoDart, onUndoTurn, onThrowDart, canUndoDart, canUndoTurn]);
+  }, [onApplyTurnTotal, onEndTurn, onUndoDart, onUndoTurn, onThrowDarts, canUndoDart, canUndoTurn]);
 
   // Initialize Speech Recognition for Voice Caller Input
   useEffect(() => {

@@ -93,6 +93,16 @@ npm run build
 npm run start
 ```
 
+## Android APK
+
+DartVector can be packaged as a native Android WebView app. It keeps scoring, match history, and the coach analysis on-device; the former server-side Gemini coach is replaced in the APK by an offline coaching routine. Firebase cloud backup/multiplayer remains optional and needs its public Firebase configuration at web-build time.
+
+```bash
+npm run android:assemble
+```
+
+This exports the web app, embeds it in the Android asset bundle, and produces `DartVector.apk` at the repository root. The Android project uses SDK platform 35 (the installed platform) and `/home/redrum/Android/Sdk/build-tools/36.0.0` for APK tooling.
+
 ---
 
 ## ⚙️ Key Application Features

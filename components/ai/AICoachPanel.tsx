@@ -17,20 +17,17 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({ match }) => {
     setLoading(true);
     try {
       const stats = storageEngine.calculateMatchStats(match);
-      const res = await fetch('/api/gemini/coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          matchData: {
-            gameType: match.gameType,
-            legsCount: match.legs.length,
-            scores: match.scores,
-          },
-          playerStats: stats,
-        }),
-      });
-      const data = await res.json();
-      setAnalysis(data.analysis);
+      const playerStats = stats[0];
+      const average = playerStats?.threeDartAvg ?? 0;
+      const checkoutRate = playerStats?.checkoutPct ?? 0;
+      const scoringTip = average >= 75
+        ? 'Your scoring base is strong—keep attacking Treble 20 with the same relaxed release.'
+        : 'Build scoring consistency with three focused visits at Treble 20 before changing target.';
+      const doublesTip = checkoutRate >= 35
+        ? 'Your finishing is holding up well; continue choosing calm, familiar doubles under pressure.'
+        : 'Finish every practice session with Bob\'s 27 or round-the-board doubles to sharpen checkout confidence.';
+
+      setAnalysis(`PDC Coach Analysis\n\n${scoringTip}\n\n${doublesTip}\n\nTraining routine:\n• 10 minutes: 121 checkout challenge—restart after every missed dart.\n• 10 minutes: alternate three darts at Treble 20 with one visit at your preferred double.\n\nThis offline analysis stays on your device.`);
     } catch (err) {
       setAnalysis('PDC Coach: Keep working on your grouping at Treble 20 and stay confident on outer doubles!');
     } finally {

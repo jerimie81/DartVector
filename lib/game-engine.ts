@@ -693,6 +693,51 @@ export function applyDartToState(
   };
 }
 
+/**
+ * Apply a spoken or imported sequence of darts as one state transition.
+ *
+ * A sequence may end a turn early because of a bust or checkout. In that
+ * case, later recognized darts belong to neither the completed turn nor the
+ * next player, so processing stops at the first completed turn.
+ */
+export function applyDartsToState(
+  state: GameState,
+  darts: DartThrow[]
+): {
+  nextState: GameState;
+  turnCompleted: boolean;
+  legCompleted: boolean;
+  matchCompleted: boolean;
+  isBust: boolean;
+  isWinDart: boolean;
+  isCheckout?: boolean;
+} {
+  let result: {
+    nextState: GameState;
+    turnCompleted: boolean;
+    legCompleted: boolean;
+    matchCompleted: boolean;
+    isBust: boolean;
+    isWinDart: boolean;
+    isCheckout?: boolean;
+  } = {
+    nextState: state,
+    turnCompleted: false,
+    legCompleted: false,
+    matchCompleted: false,
+    isBust: false,
+    isWinDart: false,
+    isCheckout: false,
+  };
+
+  for (const dart of darts) {
+    result = applyDartToState(result.nextState, dart);
+    if (result.turnCompleted) break;
+  }
+
+  return result;
+}
+
 // Apply Full Turn Total (e.g. from Keypad entry like "140")
 export function applyTotalScoreToState(
   state: GameState,
